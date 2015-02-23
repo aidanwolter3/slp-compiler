@@ -1,2 +1,2 @@
-print("hi");
-abc := 90 + 8;
+print();
+go();

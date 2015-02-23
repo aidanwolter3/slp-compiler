@@ -18,39 +18,113 @@ struct lex_syn {
   int cols;
 };
 
+char* xstrtok(char *line, char *delims);
+char*** build_parse_table(FILE *pfile);
 struct lex_syn build_lex(FILE *sfile);
-int lex_next_token(struct lex_syn lex);
+int lex_next_token(struct lex_syn lex, FILE *infile);
 
 //main method
 int main(int argc, char *argv[]) {
 
   //create the lexical syntax structure
-  FILE *sfile = fopen("lex_syn.slp", "r");
+  FILE *sfile = fopen("lex_syn", "r");
+  if(sfile == NULL) {
+    printf("Could not find lex syntax file!\n");
+    printf("The file should be placed in the same directory and named 'lex_syn'\n");
+    return 0;
+  }
   struct lex_syn lex = build_lex(sfile);
   fclose(sfile);
 
-  //while not eof (-3)
-  int token = lex_next_token(lex);
-  while(token != -3) {
-
-    if(token == -1) {
-      printf("Error!\n");
-      break;
-    }
-    else if(token == -2) {
-      printf("\n");
-    }
-    else {
-      printf("%d ", token);
-    }
-
-    //get another token
-    token = lex_next_token(lex);
+  //get the input file
+  if(argc == 1) {
+    printf("Please add the input file to the arguments\n");
+    printf("(example ./syn test)\n");
+    return 0;
   }
+  FILE *infile = fopen(argv[1], "r");
+  if(infile == NULL) {
+    printf("Could not find the input file: %s\n", argv[2]);
+    printf("Please ensure that it exists\n");
+    return 0;
+  }
+
+  //create the parse table
+  FILE *pfile = fopen("parse_table.csv", "r");
+  if(pfile == NULL) {
+    printf("Could not find the parse table file!\n");
+    printf("The file should be placed in the same directory and named 'parse_table.csv'\n");
+    return 0;
+  }
+  char ***parse_table = build_parse_table(pfile);
+  for(int i = 0; i < 8; i++) {
+    for(int j = 0; j < 6; j++) {
+      printf("%s ", parse_table[i][j]);
+    }
+    printf("\n");
+  }
+
+  //while not eof (-3)
+  //int line = 1;
+  //int state = 0;
+  //int token = lex_next_token(lex, infile);
+  //while(token != -3) {
+
+  //  //error in lexer
+  //  if(token == -1) {
+  //    printf("Error: unrecognized token\n");
+  //    break;
+  //  }
+
+  //  //newline
+  //  else if(token == -2) {
+  //    line++;
+  //  }
+
+  //  //follow the table
+  //  else {
+  //    
+  //  }
+
+  //  //get another token
+  //  token = lex_next_token(lex, infile);
+  //}
 
   return 0;
 }
 
+char*** build_parse_table(FILE *pfile) {
+
+  //terrible usage of memory allocation
+  char ***ptable = (char***)malloc(8*sizeof(void*));
+  for(int i = 0; i < 8; i++) {
+    ptable[i] = (char**)malloc(6*sizeof(void*));
+    for(int j = 0; j < 6; j++) {
+      ptable[i][j] = (char*)malloc(256*sizeof(char*));
+    }
+  }
+
+  char line[256];
+  int cols = 6;
+  int rows = 8;
+  fgets(line, sizeof(line), pfile);
+
+  //get the rest of the table
+  char *ptr = xstrtok(line, (char*)",\r");
+  for(int i = 0; i < rows; i++) {
+    for(int j = 0; j < cols; j++) {
+      if(ptr == NULL) {
+        ptable[i][j] = (char*)"";
+      }
+      else {
+        strcpy(ptable[i][j], ptr);
+      }
+      ptr = xstrtok(NULL, (char*)",\r");
+    }
+  }
+  
+  return ptable;
+}
 
 struct lex_syn build_lex(FILE *sfile) {
   struct lex_syn lex;
@@ -101,25 +175,25 @@ struct lex_syn build_lex(FILE *sfile) {
   return lex;
 }
 
-int lex_next_token(struct lex_syn lex) {
+int lex_next_token(struct lex_syn lex, FILE *infile) {
 
   //keep track of the current character
   static char c = 0;
 
   //if a character has not been passed from the previous stage, get another
   if(c == 0) {
-    c = getc(stdin);
+    c = fgetc(infile);
   }
 
   //check for newline
   if(c == '\n') {
-    c = getc(stdin);
+    c = fgetc(infile);
     return -2; //return newline token
   }
 
   //check for eof
   if(c == EOF) {
-    c = getc(stdin);
+    c = fgetc(infile);
     return -3; //return eof token
   }
 
@@ -173,10 +247,45 @@ int lex_next_token(struct lex_syn lex) {
       }
 
       //get another character
-      c = getc(stdin);
+      c = fgetc(infile);
     }
 
   } while(match_found);
 
   return -1;
+}
+
+
+//modified strtok that takes into account empty strings
+//courtesy of http://www.tek-tips.com/viewthread.cfm?qid=294161
+char* xstrtok(char *line, char *delims) {
+  static char *saveline = NULL;
+  char *p;
+  int n;
+
+  if(line != NULL) {
+    saveline = line;
+  }
+
+  /*
+  *see if we have reached the end of the line 
+  */
+  if(saveline == NULL || *saveline == '\0') {
+    return(NULL);
+  }
+
+  /*
+  *return the number of characters that aren't delims 
+  */
+  n = strcspn(saveline, delims);
+  p = saveline; /*save start of this token*/
+
+  saveline += n; /*bump past the delim*/
+
+  /*trash the delim if necessary*/
+  if(*saveline != '\0') {
+    *saveline++ = '\0';
+  }
+
+  return p;
 }
