@@ -11,9 +11,8 @@
 
 //the lex structure that defines valid strings of characters for their tokens
 struct lex_syn {
+  int table[256][256];
   char *matches[256];
-  int stages[256][256];
-  int tokens[256];
   int rows;
   int cols;
 };
@@ -33,10 +32,10 @@ struct token lex_next_token(struct lex_syn lex, FILE *infile);
 int main(int argc, char *argv[]) {
 
   //create the lexical syntax structure
-  FILE *sfile = fopen("lex_syn", "r");
+  FILE *sfile = fopen("lex_table.csv", "r");
   if(sfile == NULL) {
     printf("Could not find lex syntax file!\n");
-    printf("The file should be placed in the same directory and named 'lex_syn'\n");
+    printf("The file should be placed in the same directory and named 'lex_table.csv'\n");
     return 0;
   }
   struct lex_syn lex = build_lex(sfile);
@@ -62,17 +61,9 @@ int main(int argc, char *argv[]) {
     printf("The file should be placed in the same directory and named 'parse_table.csv'\n");
     return 0;
   }
-  //char ***parse_table = build_parse_table(pfile);
   int parse_table_rows;
   int parse_table_cols;
   char ***parse_table = parse_csv(pfile, &parse_table_rows, &parse_table_cols);
-  //printf("r: %d, c: %d\n", r, c);
-  //for(int i = 0; i < r; i++) {
-  //  for(int j = 0; j < c; j++) {
-  //    printf("%s ", parse_table[i][j]);
-  //  }
-  //  printf("\n");
-  //}
 
   //continue parsing until error or accept
   int line = 1;
@@ -320,48 +311,22 @@ char*** parse_csv(FILE *file, int *rows, int *cols) {
 
 struct lex_syn build_lex(FILE *sfile) {
   struct lex_syn lex;
-  lex.rows = 0;
-  lex.cols = 0;
+  char ***table = parse_csv(sfile, &lex.rows, &lex.cols);
 
-  //parse the syntax file one line at a time
-  char line[256];
-  while(fgets(line, sizeof(line), sfile)) {
-    
-    //get the matches at the top of the file
-    char *ptr;
-    if(lex.rows == 0) {
-      ptr = strtok(line, "\\\n");
-      while(ptr != NULL) {
-        lex.matches[lex.cols] = (char*)malloc(256*sizeof(char));
-        strcpy(lex.matches[lex.cols], ptr);
-        lex.cols++;
-        ptr = strtok(NULL, "\\\n");
-      }
+  //subtract the top row
+  lex.rows--;
+
+  //copy the matches header
+  for(int i = 0; i < lex.cols; i++) {
+    lex.matches[i] = (char*)malloc(256*sizeof(char*));
+    strcpy(lex.matches[i], table[0][i]);
+  }
+
+  //copy the rest and cast as integers
+  for(int i = 0; i < lex.rows; i++) {
+    for(int j = 0; j < lex.cols; j++) {
+      lex.table[i][j] = strtod(table[i+1][j], NULL);
     }
-
-    //get the stages and their tokens
-    else {
-      int tmpcols = 0;
-      char *stopstr;
-      lex.stages[lex.rows-1][tmpcols] = strtod(strtok(line, "\\\n"), &stopstr);
-      tmpcols++;
-      while(tmpcols < lex.cols) {
-        lex.stages[lex.rows-1][tmpcols] = strtod(strtok(NULL, "\\\n"), &stopstr);
-        tmpcols++;
-      }
-
-      //get the tokens
-      ptr = strtok(NULL, "\\\n");
-      if(ptr == NULL) {
-        lex.tokens[lex.rows-1] = 0;
-      }
-      else {
-        lex.tokens[lex.rows-1] = strtod(ptr, &stopstr);
-      }
-    }
-
-    //move to the next line
-    lex.rows++;
   }
 
   return lex;
@@ -417,7 +382,7 @@ struct token lex_next_token(struct lex_syn lex, FILE *infile) {
         //compare matches[c][n] to input[i]
         //also treat newlines and eofs as spaces
         if((*m == ' ' && (c == '\n' || c == EOF)) || *m == c) {
-          newstage = lex.stages[stage][col];
+          newstage = lex.table[stage][col];
           match_found = 1;
           break;
         }
@@ -438,7 +403,7 @@ struct token lex_next_token(struct lex_syn lex, FILE *infile) {
 
         //check if success (returning to stage 0)
         if(newstage == 0) {
-          t.t = lex.tokens[stage];
+          t.t = lex.table[stage][lex.cols-1];
           return t;
         }
 
