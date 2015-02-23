@@ -18,6 +18,10 @@ struct lex_syn {
   int cols;
 };
 
+#define PT_ROWS 8
+#define PT_COLS 6
+
+int parse_table_col_from_token(int token, char ***parse_table);
 char* xstrtok(char *line, char *delims);
 char*** build_parse_table(FILE *pfile);
 struct lex_syn build_lex(FILE *sfile);
@@ -57,62 +61,135 @@ int main(int argc, char *argv[]) {
     return 0;
   }
   char ***parse_table = build_parse_table(pfile);
-  for(int i = 0; i < 8; i++) {
-    for(int j = 0; j < 6; j++) {
-      printf("%s ", parse_table[i][j]);
+
+  //continue parsing until error or accept
+  int line = 1;
+  int t_stack[256]; //token stack
+  int s_stack[256]; //state stack
+  s_stack[0] = 0;   //start in state 0
+  int t_stack_cnt = 0;
+  int s_stack_cnt = 1;
+  int token = lex_next_token(lex, infile);
+  while(true) {
+
+    //error in lexer
+    if(token == -1) {
+      printf("Error: unrecognized token\n");
+      break;
     }
-    printf("\n");
+
+    //newline
+    else if(token == -2) {
+      line++;
+    }
+
+    //follow the table
+    else {
+
+      //get the command from the table
+      //state+1 because we do not use the header of the table
+      //token-1 because token 0 is invalid
+      int state = s_stack[s_stack_cnt-1];
+      int token_index = parse_table_col_from_token(token, parse_table);
+      char *cmd = parse_table[state+1][token_index];
+
+      //cell is empty, so report expecting something else
+      if(strlen(cmd) == 0) {
+        printf("cell is empty. expecting something else\n");
+        return 0;
+      }
+
+      //reduction
+      if(cmd[0] == 'r') {
+
+        char *stopstr;
+        int prod = strtod(&cmd[1], &stopstr);
+        int pop_size; //how much to pop off the stacks
+        int rep_token;//what to push onto the token stack
+
+        //check each production
+        if(prod == 0) {
+          pop_size = 5; //print();
+          rep_token = 5;
+        }
+        else if(prod == 1) {
+          pop_size = 0; //epsilon
+          rep_token = 5;
+        }
+        
+        //pop off the size of the production
+        s_stack_cnt -= pop_size;
+        t_stack_cnt -= pop_size;
+
+        //push the replacement token
+        t_stack[t_stack_cnt++] = rep_token;
+
+        //push the new state from the goto
+        int cur_state = s_stack[s_stack_cnt-1];
+        int new_token_index = parse_table_col_from_token(rep_token, parse_table);
+        char *cmd_goto = parse_table[cur_state+1][new_token_index];
+        s_stack[s_stack_cnt++] = strtod(cmd_goto, &stopstr);
+      }
+
+      //shift
+      else if(cmd[0] == 's') {
+        char *stopstr;
+        int newstate = strtod(&cmd[1], &stopstr);
+        t_stack[t_stack_cnt++] = token;
+        s_stack[s_stack_cnt++] = newstate;
+      }
+
+      //accept command
+      else if(cmd[0] == 'a') {
+        printf("The file has proper syntax\n");
+        return 0;
+      }
+
+      //invalid command
+      else {
+        printf("Parse table is invalid!\n");
+        return 0;
+      }
+    }
+
+    //get another token
+    token = lex_next_token(lex, infile);
   }
-
-  //while not eof (-3)
-  //int line = 1;
-  //int state = 0;
-  //int token = lex_next_token(lex, infile);
-  //while(token != -3) {
-
-  //  //error in lexer
-  //  if(token == -1) {
-  //    printf("Error: unrecognized token\n");
-  //    break;
-  //  }
-
-  //  //newline
-  //  else if(token == -2) {
-  //    line++;
-  //  }
-
-  //  //follow the table
-  //  else {
-  //    
-  //  }
-
-  //  //get another token
-  //  token = lex_next_token(lex, infile);
-  //}
 
   return 0;
 }
 
+//search for the token in the parse table and return the col index
+int parse_table_col_from_token(int token, char ***parse_table) {
+  for(int i = 0; i < PT_COLS; i++) {
+    int tmp_token = strtod(parse_table[0][i], NULL);
+    if(tmp_token == token) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+//build the parse table from a file
+//TODO: make the dimensions change depending on the actual size in the csv
 char*** build_parse_table(FILE *pfile) {
 
   //terrible usage of memory allocation
-  char ***ptable = (char***)malloc(8*sizeof(void*));
-  for(int i = 0; i < 8; i++) {
-    ptable[i] = (char**)malloc(6*sizeof(void*));
-    for(int j = 0; j < 6; j++) {
+  char ***ptable = (char***)malloc(PT_ROWS*sizeof(void*));
+  for(int i = 0; i < PT_ROWS; i++) {
+    ptable[i] = (char**)malloc(PT_COLS*sizeof(void*));
+    for(int j = 0; j < PT_COLS; j++) {
       ptable[i][j] = (char*)malloc(256*sizeof(char*));
     }
   }
 
   char line[256];
-  int cols = 6;
-  int rows = 8;
   fgets(line, sizeof(line), pfile);
 
   //get the rest of the table
   char *ptr = xstrtok(line, (char*)",\r");
-  for(int i = 0; i < rows; i++) {
-    for(int j = 0; j < cols; j++) {
+  for(int i = 0; i < PT_ROWS; i++) {
+    for(int j = 0; j < PT_COLS; j++) {
       if(ptr == NULL) {
         ptable[i][j] = (char*)"";
       }
