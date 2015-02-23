@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
   struct lex_syn lex = build_lex(sfile);
   fclose(sfile);
 
+
   //get the input file
   if(argc == 1) {
     printf("Please add the input file to the arguments\n");
@@ -54,6 +55,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
+
   //create the parse table
   FILE *pfile = fopen("parse_table.csv", "r");
   if(pfile == NULL) {
@@ -64,6 +66,7 @@ int main(int argc, char *argv[]) {
   int parse_table_rows;
   int parse_table_cols;
   char ***parse_table = parse_csv(pfile, &parse_table_rows, &parse_table_cols);
+
 
   //continue parsing until error or accept
   int line = 1;
