@@ -18,14 +18,16 @@ struct lex_syn {
   int cols;
 };
 
-#define PT_ROWS 8
-#define PT_COLS 6
+struct token {
+  int t;
+  char l[256];
+};
 
-int parse_table_col_from_token(int token, char ***parse_table);
+char*** parse_csv(FILE *file, int *rows, int *cols);
+int parse_table_col_from_token(struct token t, char ***parse_table, int cols);
 char* xstrtok(char *line, char *delims);
-char*** build_parse_table(FILE *pfile);
 struct lex_syn build_lex(FILE *sfile);
-int lex_next_token(struct lex_syn lex, FILE *infile);
+struct token lex_next_token(struct lex_syn lex, FILE *infile);
 
 //main method
 int main(int argc, char *argv[]) {
@@ -60,7 +62,17 @@ int main(int argc, char *argv[]) {
     printf("The file should be placed in the same directory and named 'parse_table.csv'\n");
     return 0;
   }
-  char ***parse_table = build_parse_table(pfile);
+  //char ***parse_table = build_parse_table(pfile);
+  int parse_table_rows;
+  int parse_table_cols;
+  char ***parse_table = parse_csv(pfile, &parse_table_rows, &parse_table_cols);
+  //printf("r: %d, c: %d\n", r, c);
+  //for(int i = 0; i < r; i++) {
+  //  for(int j = 0; j < c; j++) {
+  //    printf("%s ", parse_table[i][j]);
+  //  }
+  //  printf("\n");
+  //}
 
   //continue parsing until error or accept
   int line = 1;
@@ -69,17 +81,17 @@ int main(int argc, char *argv[]) {
   s_stack[0] = 0;   //start in state 0
   int t_stack_cnt = 0;
   int s_stack_cnt = 1;
-  int token = lex_next_token(lex, infile);
+  struct token t = lex_next_token(lex, infile);
   while(true) {
 
     //error in lexer
-    if(token == -1) {
-      printf("Error: unrecognized token\n");
+    if(t.t == -1) {
+      printf("Error: Lexer found unrecognized token '%s' on line %d\n", t.l, line);
       break;
     }
 
     //newline
-    else if(token == -2) {
+    else if(t.t == -2) {
       line++;
     }
 
@@ -90,12 +102,40 @@ int main(int argc, char *argv[]) {
       //state+1 because we do not use the header of the table
       //token-1 because token 0 is invalid
       int state = s_stack[s_stack_cnt-1];
-      int token_index = parse_table_col_from_token(token, parse_table);
+      int token_index = parse_table_col_from_token(t, parse_table, parse_table_cols);
       char *cmd = parse_table[state+1][token_index];
 
       //cell is empty, so report expecting something else
       if(strlen(cmd) == 0) {
-        printf("cell is empty. expecting something else\n");
+
+        //get valid options
+        char *options[256];
+        int options_len = 0;
+        for(int i = 0; i < parse_table_cols; i++) {
+          if(strlen(parse_table[state+1][i]) > 0) {
+            options[options_len++] = parse_table[0][i];
+          }
+        }
+
+        //build the options string
+        char options_str[256];
+        options_str[0] = '{';
+        int options_str_len = 1;
+        for(int i = 0; i < options_len; i++) {
+
+          //add the option
+          strcpy(&options_str[options_str_len], options[i]);
+          options_str_len += strlen(options[i]);
+
+          //only add a comma if not the last option
+          if(i < options_len-1) {
+            options_str[options_str_len++] = ',';
+          }
+        }
+        options_str[options_str_len++] = '}';
+        options_str[options_str_len] = '\0';
+
+        printf("Error: Syntax analyzer found '%s' on line %d while expecting one of the set %s\n", t.l, line, options_str);
         return 0;
       }
 
@@ -105,16 +145,18 @@ int main(int argc, char *argv[]) {
         char *stopstr;
         int prod = strtod(&cmd[1], &stopstr);
         int pop_size; //how much to pop off the stacks
-        int rep_token;//what to push onto the token stack
+        struct token rep_token;//what to push onto the token stack
 
         //check each production
         if(prod == 0) {
           pop_size = 5; //print();
-          rep_token = 5;
+          rep_token.t = 5;
+          rep_token.l[0] = 'S';
         }
         else if(prod == 1) {
           pop_size = 0; //epsilon
-          rep_token = 5;
+          rep_token.t = 5;
+          strcpy(rep_token.l, "epsilon");
         }
         
         //pop off the size of the production
@@ -122,11 +164,11 @@ int main(int argc, char *argv[]) {
         t_stack_cnt -= pop_size;
 
         //push the replacement token
-        t_stack[t_stack_cnt++] = rep_token;
+        t_stack[t_stack_cnt++] = rep_token.t;
 
         //push the new state from the goto
         int cur_state = s_stack[s_stack_cnt-1];
-        int new_token_index = parse_table_col_from_token(rep_token, parse_table);
+        int new_token_index = parse_table_col_from_token(rep_token, parse_table, parse_table_cols);
         char *cmd_goto = parse_table[cur_state+1][new_token_index];
         s_stack[s_stack_cnt++] = strtod(cmd_goto, &stopstr);
       }
@@ -135,7 +177,7 @@ int main(int argc, char *argv[]) {
       else if(cmd[0] == 's') {
         char *stopstr;
         int newstate = strtod(&cmd[1], &stopstr);
-        t_stack[t_stack_cnt++] = token;
+        t_stack[t_stack_cnt++] = t.t;
         s_stack[s_stack_cnt++] = newstate;
       }
 
@@ -147,60 +189,133 @@ int main(int argc, char *argv[]) {
 
       //invalid command
       else {
-        printf("Parse table is invalid!\n");
+        printf("Error: Parse table contains unknown command (%s)\n", cmd);
         return 0;
       }
     }
 
     //get another token
-    token = lex_next_token(lex, infile);
+    t = lex_next_token(lex, infile);
   }
 
   return 0;
 }
 
 //search for the token in the parse table and return the col index
-int parse_table_col_from_token(int token, char ***parse_table) {
-  for(int i = 0; i < PT_COLS; i++) {
+int parse_table_col_from_token(struct token t, char ***parse_table, int cols) {
+  for(int i = 0; i < cols; i++) {
     int tmp_token = strtod(parse_table[0][i], NULL);
-    if(tmp_token == token) {
+    if(tmp_token == t.t) {
       return i;
     }
   }
   return -1;
 }
 
-//build the parse table from a file
-//TODO: make the dimensions change depending on the actual size in the csv
-char*** build_parse_table(FILE *pfile) {
+//parse a csv with a variable size
+char*** parse_csv(FILE *file, int *rows, int *cols) {
+  char ***table;
+  char *line = (char*)malloc(1024*sizeof(char*)); //bigger?
+  *rows = 1;
+  *cols = 1;
+  while(fgets(line, 1024, file)) {
 
-  //terrible usage of memory allocation
-  char ***ptable = (char***)malloc(PT_ROWS*sizeof(void*));
-  for(int i = 0; i < PT_ROWS; i++) {
-    ptable[i] = (char**)malloc(PT_COLS*sizeof(void*));
-    for(int j = 0; j < PT_COLS; j++) {
-      ptable[i][j] = (char*)malloc(256*sizeof(char*));
+    //count the number of rows and columns
+    bool cols_state = false;
+    for(int i = 0; i < strlen(line); i++) {
+
+      //increment the rows
+      if(line[i] == '\r') {
+        (*rows)++;
+      }
+
+      //increment the cols if on the first row
+      if(*rows == 1) {
+
+        //take care of all the quote nastiness with a state machine
+        if(cols_state == false) {
+          if(line[i] == '"') {
+            cols_state = true;
+          }
+          if(line[i] == ',') {
+            (*cols)++;
+          }
+        }
+        else if(cols_state == true) {
+          if(line[i] == '"') {
+            cols_state = false;
+          }
+        }
+      }
+    }
+
+    //allocate enough memory
+    table = (char***)malloc(*rows*sizeof(void*));
+    for(int i = 0; i < *rows; i++) {
+      table[i] = (char**)malloc(*cols*sizeof(void*));
+      for(int j = 0; j < *cols; j++) {
+        table[i][j] = (char*)malloc(256*sizeof(char*));
+      }
+    }
+
+
+    //read a single cell in the row
+    for(int i = 0; i < *rows; i++) {
+
+      //logical row separated by CRs
+      char *row = (char*)malloc(256*sizeof(char*));
+      char *ptr;
+      ptr = xstrtok(line, (char*)"\r");
+      line += strlen(ptr)+1;
+      memcpy(row, ptr, strlen(ptr));
+
+      for(int j = 0; j < *cols; j++) {
+        char cell[256];
+        int cell_len = 0;
+
+        //if quote found, be careful with commas
+        if(row[0] == '"') {
+          row++;
+          while(true) {
+
+            //double quote found
+            if(row[0] == '"' && row[1] == '"') {
+              cell[cell_len++] = '"';
+              row += 2;
+            }
+
+            //end of cell
+            else if(row[0] == '"' && row[1] == ',') {
+              row += 2;
+              break;
+            }
+
+            //anything else
+            else {
+              cell[cell_len++] = row[0];
+              row++;
+            }
+          }
+        }
+
+        //normal cell (no quote)
+        else {
+          char *ptr = (char*)malloc(256*sizeof(char*));
+          if(strlen(row) != 0) {
+            char *tmp = xstrtok(row, (char*)",");
+            memcpy(ptr, tmp, strlen(tmp));
+          }
+          row += strlen(ptr)+1;
+          strcpy(cell, ptr);
+        }
+
+        //copy the discovered cell into the table
+        strcpy(table[i][j], cell);
+      }
     }
   }
 
-  char line[256];
-  fgets(line, sizeof(line), pfile);
-
-  //get the rest of the table
-  char *ptr = xstrtok(line, (char*)",\r");
-  for(int i = 0; i < PT_ROWS; i++) {
-    for(int j = 0; j < PT_COLS; j++) {
-      if(ptr == NULL) {
-        ptable[i][j] = (char*)"";
-      }
-      else {
-        strcpy(ptable[i][j], ptr);
-      }
-      ptr = xstrtok(NULL, (char*)",\r");
-    }
-  }
-  
-  return ptable;
+  return table;
 }
 
 struct lex_syn build_lex(FILE *sfile) {
@@ -252,7 +367,15 @@ struct lex_syn build_lex(FILE *sfile) {
   return lex;
 }
 
-int lex_next_token(struct lex_syn lex, FILE *infile) {
+struct token lex_next_token(struct lex_syn lex, FILE *infile) {
+
+  //build the default token to return
+  struct token t;
+  t.t = -1;
+  memset(t.l, 0, sizeof(t.l));
+
+  //keep track of the length of the lexem
+  int lexem_size = 0;
 
   //keep track of the current character
   static char c = 0;
@@ -264,21 +387,25 @@ int lex_next_token(struct lex_syn lex, FILE *infile) {
 
   //check for newline
   if(c == '\n') {
+    t.l[lexem_size++] = c;
+    t.t = -2;
     c = fgetc(infile);
-    return -2; //return newline token
+    return t; //return newline token
   }
 
   //check for eof
   if(c == EOF) {
+    t.l[lexem_size++] = c;
+    t.t = -3;
     c = fgetc(infile);
-    return -3; //return eof token
+    return t; //return eof token
   }
 
   //start at the first stage and continue
   int stage = 0;
   int newstage = 0;
   int match_found = 0;
-
+  
   //continue to check for matches until entire token is found or error
   do {
 
@@ -311,7 +438,8 @@ int lex_next_token(struct lex_syn lex, FILE *infile) {
 
         //check if success (returning to stage 0)
         if(newstage == 0) {
-          return lex.tokens[stage];
+          t.t = lex.tokens[stage];
+          return t;
         }
 
         //move to the new stage
@@ -319,17 +447,20 @@ int lex_next_token(struct lex_syn lex, FILE *infile) {
 
         //check if error stage
         if(stage == -1) {
-          return -1;
+          t.t = -1;
+          return t;
         }
       }
 
       //get another character
+      t.l[lexem_size++] = c;
       c = fgetc(infile);
     }
 
   } while(match_found);
 
-  return -1;
+  t.l[lexem_size++] = c;
+  return t;
 }
 
 
