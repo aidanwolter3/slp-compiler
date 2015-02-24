@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
       //token-1 because token 0 is invalid
       int state = s_stack[s_stack_cnt-1];
       int token_index = parse_table_col_from_token(t, parse_table, parse_table_cols);
-      char *cmd = parse_table[state+1][token_index];
+      char *cmd = parse_table[state+2][token_index];
 
       //cell is empty, so report expecting something else
       if(strlen(cmd) == 0) {
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
         char *options[256];
         int options_len = 0;
         for(int i = 0; i < parse_table_cols; i++) {
-          if(strlen(parse_table[state+1][i]) > 0) {
+          if(strlen(parse_table[state+2][i]) > 0) {
             options[options_len++] = parse_table[0][i];
           }
         }
@@ -258,7 +258,7 @@ int main(int argc, char *argv[]) {
         //push the new state from the goto
         int cur_state = s_stack[s_stack_cnt-1];
         int new_token_index = parse_table_col_from_token(rep_token, parse_table, parse_table_cols);
-        char *cmd_goto = parse_table[cur_state+1][new_token_index];
+        char *cmd_goto = parse_table[cur_state+2][new_token_index];
         s_stack[s_stack_cnt++] = strtod(cmd_goto, &stopstr);
       }
 
@@ -307,7 +307,7 @@ int main(int argc, char *argv[]) {
 //search for the token in the parse table and return the col index
 int parse_table_col_from_token(struct token t, char ***parse_table, int cols) {
   for(int i = 0; i < cols; i++) {
-    int tmp_token = strtod(parse_table[0][i], NULL);
+    int tmp_token = strtod(parse_table[1][i], NULL);
     if(tmp_token == t.t) {
       return i;
     }
