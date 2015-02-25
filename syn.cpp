@@ -9,6 +9,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+//#define DEBUG
+
 //the lex structure that defines valid strings of characters for their tokens
 struct lex_syn {
   int table[256][256];
@@ -17,11 +19,28 @@ struct lex_syn {
   int cols;
 };
 
+//a token including the decimal value 't' and the lexem 'l'
 struct token {
   int t;
   char l[256];
 };
 
+//a single symbol for the symbol table
+struct symbol {
+  char *name;
+  int t;
+  int type;
+};
+
+//symbol table
+struct symbol_table {
+  struct symbol d[100];
+  int size;
+};
+struct symbol_table sym_table;
+
+void symbol_table_dump();
+int symbol_table_add(int token, char *lexem, int type);
 char*** parse_csv(FILE *file, int *rows, int *cols);
 int parse_table_col_from_token(struct token t, char ***parse_table, int cols);
 char* xstrtok(char *line, char *delims);
@@ -30,6 +49,8 @@ struct token lex_next_token(struct lex_syn lex, FILE *infile);
 
 //main method
 int main(int argc, char *argv[]) {
+
+  sym_table.size = 0;
 
   //create the lexical syntax structure
   FILE *sfile = fopen("lex_table.csv", "r");
@@ -67,7 +88,6 @@ int main(int argc, char *argv[]) {
   int parse_table_cols;
   char ***parse_table = parse_csv(pfile, &parse_table_rows, &parse_table_cols);
 
-
   //continue parsing until error or accept
   int line = 1;
   int t_stack[256]; //token stack
@@ -76,12 +96,21 @@ int main(int argc, char *argv[]) {
   int t_stack_cnt = 0;
   int s_stack_cnt = 1;
   struct token t = lex_next_token(lex, infile);
-  //printf("t: %d %s\n", t.t, t.l);
+
+  if(t.t == 1) {
+    symbol_table_add(t.t, t.l, 0); //type = 0 for now
+  }
+
+  #ifdef DEBUG
+  printf("t: %d %s\n", t.t, t.l);
+  #endif
+
   while(true) {
 
     //error in lexer
     if(t.t == -1) {
       printf("Error: Lexer found unrecognized token '%s' on line %d\n", t.l, line);
+      symbol_table_dump();
       break;
     }
 
@@ -91,7 +120,13 @@ int main(int argc, char *argv[]) {
 
       //get another token
       t = lex_next_token(lex, infile);
-      //printf("t: %d %s\n", t.t, t.l);
+      if(t.t == 1) {
+        symbol_table_add(t.t, t.l, 0); //type = 0 for now
+      }
+
+      #ifdef DEBUG
+      printf("t: %d %s\n", t.t, t.l);
+      #endif
     }
 
     //follow the table
@@ -138,7 +173,9 @@ int main(int argc, char *argv[]) {
         return 0;
       }
 
-      //printf("cmd: %s\n", cmd);
+      #ifdef DEBUG
+      printf("cmd: %s\n", cmd);
+      #endif
 
       //reduction
       if(cmd[0] == 'r') {
@@ -271,37 +308,78 @@ int main(int argc, char *argv[]) {
 
         //get another token
         t = lex_next_token(lex, infile);
-        //printf("t: %d %s\n", t.t, t.l);
+        if(t.t == 1) {
+          symbol_table_add(t.t, t.l, 0); //type = 0 for now
+        }
+
+        #ifdef DEBUG
+        printf("t: %d %s\n", t.t, t.l);
+        #endif
       }
 
       //accept command
       else if(cmd[0] == 'a') {
         printf("The file has proper syntax\n");
+        symbol_table_dump();
         return 0;
       }
 
       //invalid command
       else {
         printf("Error: Parse table contains unknown command (%s)\n", cmd);
+        symbol_table_dump();
         return 0;
       }
 
 
-      //printf("t_stack: ");
-      //for(int i = 0; i < t_stack_cnt; i++) {
-      //  printf("%d, ", t_stack[i]);
-      //}
-      //printf("\ns_stack: ");
-      //for(int i = 0; i < s_stack_cnt; i++) {
-      //  printf("%d, ", s_stack[i]);
-      //}
-      //printf("\n");
+      #ifdef DEBUG
+      printf("t_stack: ");
+      for(int i = 0; i < t_stack_cnt; i++) {
+        printf("%d, ", t_stack[i]);
+      }
+      printf("\ns_stack: ");
+      for(int i = 0; i < s_stack_cnt; i++) {
+        printf("%d, ", s_stack[i]);
+      }
+      printf("\n");
+      #endif
     }
 
     
   }
 
   return 0;
+}
+
+//dump the symbol table to stdout
+void symbol_table_dump() {
+  printf("\nSymbol Table:\n");
+  for(int i = 0; i < sym_table.size; i++) {
+    printf("%d %s\n", sym_table.d[i].t, sym_table.d[i].name);
+  }
+}
+
+//add a symbol to the symbol table
+int symbol_table_add(int token, char *lexem, int type) {
+
+  //add the token to the symbol table if needed
+  bool sym_found = false;
+  for(int i = 0; i < sym_table.size; i++) {
+    if(strcmp(sym_table.d[i].name, lexem) == 0) {
+      sym_found = true;
+      break;
+    }
+  }
+  if(!sym_found) {
+    struct symbol sym;
+    sym.t = token;
+    sym.type = 0; //initialize to 0 for now
+    sym.name = (char*)malloc(sizeof(lexem));
+    strcpy(sym.name, lexem);
+    sym_table.d[sym_table.size++] = sym;
+  }
+
+  return sym_found ? 0 : -1;
 }
 
 //search for the token in the parse table and return the col index
@@ -514,16 +592,22 @@ struct token lex_next_token(struct lex_syn lex, FILE *infile) {
     }
 
     //if a match was found
+    bool not_cycling = false;
     if(match_found == 1) {
       //printf("match found in stage: %d, newstage: %d\n", stage, newstage);
       
-      //as long as not cycling in stage 0 (whitespace only)
+      //as long as not cycling in stage 0 (usually whitespace only)
       if(stage != 0 || newstage != 0) {
 
         //check if success (returning to stage 0)
         if(newstage == 0) {
           t.t = lex.table[stage][lex.cols-1];
           return t;
+        }
+
+        //still getting chars so push the character onto the lexem
+        else {
+          t.l[lexem_size++] = c;
         }
 
         //move to the new stage
@@ -535,11 +619,10 @@ struct token lex_next_token(struct lex_syn lex, FILE *infile) {
           return t;
         }
       }
-
-      //get another character
-      t.l[lexem_size++] = c;
-      c = fgetc(infile);
     }
+
+    //get another character
+    c = fgetc(infile);
 
   } while(match_found);
 
