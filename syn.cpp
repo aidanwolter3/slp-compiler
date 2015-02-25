@@ -4,10 +4,18 @@
 // 2/26/2015
 // 
 // Description:
+//  This program completes lexical analysis, syntax analysis, and preliminary
+//  construction of a symbol table. The input file type is a predefined straight
+//  line programming language. The program requires two language definition files:
+//  lex_table.csv & parse_table.csv to be located in the same directory. The program
+//  checks for proper syntax and indicates where errors are if they exist.
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include "symbol_table.h"
+extern struct symbol_table sym_table;
 
 //#define DEBUG
 
@@ -25,22 +33,6 @@ struct token {
   char l[256];
 };
 
-//a single symbol for the symbol table
-struct symbol {
-  char *name;
-  int t;
-  int type;
-};
-
-//symbol table
-struct symbol_table {
-  struct symbol d[100];
-  int size;
-};
-struct symbol_table sym_table;
-
-void symbol_table_dump();
-int symbol_table_add(int token, char *lexem, int type);
 char*** parse_csv(FILE *file, int *rows, int *cols);
 int parse_table_col_from_token(struct token t, char ***parse_table, int cols);
 char* xstrtok(char *line, char *delims);
@@ -50,7 +42,7 @@ struct token lex_next_token(struct lex_syn lex, FILE *infile);
 //main method
 int main(int argc, char *argv[]) {
 
-  sym_table.size = 0;
+  symbol_table_init();
 
   //create the lexical syntax structure
   FILE *sfile = fopen("lex_table.csv", "r");
@@ -351,37 +343,6 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-//dump the symbol table to stdout
-void symbol_table_dump() {
-  printf("\nSymbol Table:\n");
-  for(int i = 0; i < sym_table.size; i++) {
-    printf("%d %s\n", sym_table.d[i].t, sym_table.d[i].name);
-  }
-}
-
-//add a symbol to the symbol table
-int symbol_table_add(int token, char *lexem, int type) {
-
-  //add the token to the symbol table if needed
-  bool sym_found = false;
-  for(int i = 0; i < sym_table.size; i++) {
-    if(strcmp(sym_table.d[i].name, lexem) == 0) {
-      sym_found = true;
-      break;
-    }
-  }
-  if(!sym_found) {
-    struct symbol sym;
-    sym.t = token;
-    sym.type = 0; //initialize to 0 for now
-    sym.name = (char*)malloc(sizeof(lexem));
-    strcpy(sym.name, lexem);
-    sym_table.d[sym_table.size++] = sym;
-  }
-
-  return sym_found ? 0 : -1;
-}
-
 //search for the token in the parse table and return the col index
 int parse_table_col_from_token(struct token t, char ***parse_table, int cols) {
   for(int i = 0; i < cols; i++) {
@@ -495,13 +456,6 @@ char*** parse_csv(FILE *file, int *rows, int *cols) {
       }
     }
   }
-
-  //for(int i = 0; i < *rows; i++) {
-  //  for(int j = 0; j < *cols; j++) {
-  //    printf("%s ", table[i][j]);
-  //  }
-  //  printf("\n");
-  //}
 
   return table;
 }
