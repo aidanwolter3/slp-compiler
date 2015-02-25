@@ -3,6 +3,9 @@
 // Program Translation - COSC 4503
 // 2/26/2015
 
+#ifndef LEXICAL_ANALYZER
+#define LEXICAL_ANALYZER
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -23,6 +26,8 @@ struct lex_table_s {
   int cols;
 };
 
-void build_lex(FILE *sfile);
+void build_lex_table(FILE *sfile);
 struct token_s lex_next_token(FILE *infile);
 void throw_unknown_token(char *line, int line_index, int line_number, struct token_s t);
+
+#endif

@@ -3,6 +3,9 @@
 // Program Translation - COSC 4503
 // 2/26/2015
 
+#ifndef SYMBOL_TABLE
+#define SYMBOL_TABLE
+
 //a single symbol for the symbol table
 struct symbol_s {
   char *name;
@@ -20,3 +23,5 @@ struct symbol_table_s {
 void symbol_table_init();
 void symbol_table_dump();
 int symbol_table_add(int token, char *lexem, int type);
+
+#endif

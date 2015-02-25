@@ -10,8 +10,16 @@
 //global lex table
 struct lex_table_s lex_table;
 
+//keep track of the entire line
+char *cur_line = (char*)malloc(1024*sizeof(char*));
+int cur_line_cnt = 0;
+
+//keep track of the line number
+int line_number = 0;
+int line_index = 0;
+
 //build the lex_table table from a file
-void build_lex(FILE *sfile) {
+void build_lex_table(FILE *sfile) {
   char ***table = parse_csv(sfile, &lex_table.rows, &lex_table.cols);
 
   //subtract the top row
@@ -36,13 +44,6 @@ void build_lex(FILE *sfile) {
 //return the next valid token from the given file
 struct token_s lex_next_token(FILE *infile) {
 
-  //keep track of the entire line
-  static char *cur_line = (char*)malloc(1024*sizeof(char*));
-  static int cur_line_cnt = 0;
-
-  //keep track of the line number
-  static int line_number = 1;
-
   //the current token we are discovering
   struct token_s t;
   t.t = -1;
@@ -52,27 +53,27 @@ struct token_s lex_next_token(FILE *infile) {
   //the last read character, initialize to a new read
   static char c = 0;
   if(c == 0) {
-    c = fgetc(infile);
-    cur_line[cur_line_cnt++] = c;
-  }
 
-  //hold how far in the line we have parsed
-  static int line_index = 1;
+    //reset the current line
+    memset(cur_line, 0, 1024);
+    cur_line_cnt = 0;
+
+    c = fgetc(infile);
+    if(c != '\n' && c != EOF) {
+      cur_line[cur_line_cnt++] = c;
+    }
+  }
 
   //check for newline
   if(c == '\n') {
     line_number++;
     line_index = 0;
 
-    //reset the current line
-    memset(cur_line, 0, 1024);
-    cur_line_cnt = 0;
-
     //return newline token
     t.l[lexem_size++] = c;
     t.t = -2;
-    c = fgetc(infile);
-    cur_line[cur_line_cnt++] = c;
+
+    c = 0;
 
     #ifdef LEXDEBUG
     printf("t: %d %s\n", t.t, t.l);
@@ -83,10 +84,12 @@ struct token_s lex_next_token(FILE *infile) {
 
   //check for eof
   if(c == EOF) {
+    line_index = 0;
+
     t.l[lexem_size++] = c;
     t.t = -3;
-    c = fgetc(infile);
-    cur_line[cur_line_cnt++] = c;
+
+    c = 0;
 
     #ifdef LEXDEBUG
     printf("t: %d %s\n", t.t, t.l);
@@ -125,18 +128,25 @@ struct token_s lex_next_token(FILE *infile) {
 
     //error
     if(newstage == -1 || !match_found) {
+      if(lexem_size == 0) {
+        t.l[lexem_size++] = c;
+      }
       break;
     }
 
     //cycling in stage 0 so get another character (0 to 0)
     else if(newstage == 0 && stage == 0) {
-      c = fgetc(infile);
-      cur_line[cur_line_cnt++] = c;
       line_index++;
+      c = fgetc(infile);
+      if(c != '\n' && c != EOF) {
+        cur_line[cur_line_cnt++] = c;
+      }
     }
 
     //jumped to stage 0 so success (# to 0)
     else if(newstage == 0) {
+      line_index += lexem_size;
+
       t.t = lex_table.table[stage][lex_table.cols-1];
 
       #ifdef LEXDEBUG
@@ -151,8 +161,9 @@ struct token_s lex_next_token(FILE *infile) {
       stage = newstage;
       t.l[lexem_size++] = c;
       c = fgetc(infile);
-      cur_line[cur_line_cnt++] = c;
-      line_index++;
+      if(c != '\n' && c != EOF) {
+        cur_line[cur_line_cnt++] = c;
+      }
     }
 
     //still reading token (# to #)
@@ -160,20 +171,20 @@ struct token_s lex_next_token(FILE *infile) {
       stage = newstage;
       t.l[lexem_size++] = c;
       c = fgetc(infile);
-      cur_line[cur_line_cnt++] = c;
-      line_index++;
+      if(c != '\n' && c != EOF) {
+        cur_line[cur_line_cnt++] = c;
+      }
     }
 
   } while(match_found);
 
-  //no match so return error
-  t.l[lexem_size++] = c;
-
   //read char until \n or eof
-  c = fgetc(infile);
+  //c = fgetc(infile);
   while(c != '\n' && c != EOF) {
-    cur_line[cur_line_cnt++] = c;
     c = fgetc(infile);
+    if(c != '\n' && c != EOF) {
+      cur_line[cur_line_cnt++] = c;
+    }
   }
 
   throw_unknown_token(cur_line, line_index, line_number, t);
