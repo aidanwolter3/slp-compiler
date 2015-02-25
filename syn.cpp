@@ -15,29 +15,17 @@
 #include <stdlib.h>
 
 #include "symbol_table.h"
-extern struct symbol_table sym_table;
+#include "lexical_analyzer.h"
+#include "parse_csv.h"
+
+extern struct symbol_table_s sym_table;
+extern struct lex_table_s lex_table;
 
 //#define DEBUG
 
-//the lex structure that defines valid strings of characters for their tokens
-struct lex_syn {
-  int table[256][256];
-  char *matches[256];
-  int rows;
-  int cols;
-};
 
-//a token including the decimal value 't' and the lexem 'l'
-struct token {
-  int t;
-  char l[256];
-};
 
-char*** parse_csv(FILE *file, int *rows, int *cols);
-int parse_table_col_from_token(struct token t, char ***parse_table, int cols);
-char* xstrtok(char *line, char *delims);
-struct lex_syn build_lex(FILE *sfile);
-struct token lex_next_token(struct lex_syn lex, FILE *infile);
+int parse_table_col_from_token(struct token_s t, char ***parse_table, int cols);
 
 //main method
 int main(int argc, char *argv[]) {
@@ -51,7 +39,7 @@ int main(int argc, char *argv[]) {
     printf("The file should be placed in the same directory and named 'lex_table.csv'\n");
     return 0;
   }
-  struct lex_syn lex = build_lex(sfile);
+  build_lex(sfile);
   fclose(sfile);
 
 
@@ -87,7 +75,7 @@ int main(int argc, char *argv[]) {
   s_stack[0] = 0;   //start in state 0
   int t_stack_cnt = 0;
   int s_stack_cnt = 1;
-  struct token t = lex_next_token(lex, infile);
+  struct token_s t = lex_next_token(infile);
 
   if(t.t == 1) {
     symbol_table_add(t.t, t.l, 0); //type = 0 for now
@@ -111,7 +99,7 @@ int main(int argc, char *argv[]) {
       line++;
 
       //get another token
-      t = lex_next_token(lex, infile);
+      t = lex_next_token(infile);
       if(t.t == 1) {
         symbol_table_add(t.t, t.l, 0); //type = 0 for now
       }
@@ -175,7 +163,7 @@ int main(int argc, char *argv[]) {
         char *stopstr;
         int prod = strtod(&cmd[1], &stopstr);
         int pop_size; //how much to pop off the stacks
-        struct token rep_token;//what to push onto the token stack
+        struct token_s rep_token;//what to push onto the token stack
 
         //check each production
 
@@ -299,7 +287,7 @@ int main(int argc, char *argv[]) {
         s_stack[s_stack_cnt++] = newstate;
 
         //get another token
-        t = lex_next_token(lex, infile);
+        t = lex_next_token(infile);
         if(t.t == 1) {
           symbol_table_add(t.t, t.l, 0); //type = 0 for now
         }
@@ -344,7 +332,7 @@ int main(int argc, char *argv[]) {
 }
 
 //search for the token in the parse table and return the col index
-int parse_table_col_from_token(struct token t, char ***parse_table, int cols) {
+int parse_table_col_from_token(struct token_s t, char ***parse_table, int cols) {
   for(int i = 0; i < cols; i++) {
     int tmp_token = strtod(parse_table[1][i], NULL);
     if(tmp_token == t.t) {
@@ -352,269 +340,4 @@ int parse_table_col_from_token(struct token t, char ***parse_table, int cols) {
     }
   }
   return -1;
-}
-
-//parse a csv with a variable size
-char*** parse_csv(FILE *file, int *rows, int *cols) {
-  char ***table;
-  char *line = (char*)malloc(10000*sizeof(char*)); //bigger?
-  *rows = 1;
-  *cols = 1;
-  while(fgets(line, 10000, file)) {
-
-    //count the number of rows and columns
-    bool cols_state = false;
-    for(int i = 0; i < strlen(line); i++) {
-
-      //increment the rows
-      if(line[i] == '\r') {
-        (*rows)++;
-      }
-
-      //increment the cols if on the first row
-      if(*rows == 1) {
-
-        //take care of all the quote nastiness with a state machine
-        if(cols_state == false) {
-          if(line[i] == '"') {
-            cols_state = true;
-          }
-          if(line[i] == ',') {
-            (*cols)++;
-          }
-        }
-        else if(cols_state == true) {
-          if(line[i] == '"') {
-            cols_state = false;
-          }
-        }
-      }
-    }
-
-    //allocate enough memory
-    table = (char***)malloc(*rows*sizeof(void*));
-    for(int i = 0; i < *rows; i++) {
-      table[i] = (char**)malloc(*cols*sizeof(void*));
-      for(int j = 0; j < *cols; j++) {
-        table[i][j] = (char*)malloc(256*sizeof(char*));
-      }
-    }
-
-
-    //read a single cell in the row
-    for(int i = 0; i < *rows; i++) {
-
-      //logical row separated by CRs
-      char *row = (char*)malloc(256*sizeof(char*));
-      char *ptr;
-      ptr = xstrtok(line, (char*)"\r");
-      line += strlen(ptr)+1;
-      memcpy(row, ptr, strlen(ptr));
-
-      for(int j = 0; j < *cols; j++) {
-        char cell[256];
-        int cell_len = 0;
-
-        //if quote found, be careful with commas
-        if(row[0] == '"') {
-          row++;
-          while(true) {
-
-            //double quote found
-            if(row[0] == '"' && row[1] == '"') {
-              cell[cell_len++] = '"';
-              row += 2;
-            }
-
-            //end of cell
-            else if(row[0] == '"' && row[1] == ',') {
-              row += 2;
-              break;
-            }
-
-            //anything else
-            else {
-              cell[cell_len++] = row[0];
-              row++;
-            }
-          }
-        }
-
-        //normal cell (no quote)
-        else {
-          char *ptr = (char*)malloc(256*sizeof(char*));
-          if(strlen(row) != 0) {
-            char *tmp = xstrtok(row, (char*)",");
-            memcpy(ptr, tmp, strlen(tmp));
-          }
-          row += strlen(ptr)+1;
-          strcpy(cell, ptr);
-        }
-
-        //copy the discovered cell into the table
-        strcpy(table[i][j], cell);
-      }
-    }
-  }
-
-  return table;
-}
-
-struct lex_syn build_lex(FILE *sfile) {
-  struct lex_syn lex;
-  char ***table = parse_csv(sfile, &lex.rows, &lex.cols);
-
-  //subtract the top row
-  lex.rows--;
-
-  //copy the matches header
-  for(int i = 0; i < lex.cols; i++) {
-    lex.matches[i] = (char*)malloc(256*sizeof(char*));
-    strcpy(lex.matches[i], table[0][i]);
-  }
-
-  //copy the rest and cast as integers
-  for(int i = 0; i < lex.rows; i++) {
-    for(int j = 0; j < lex.cols; j++) {
-      lex.table[i][j] = strtod(table[i+1][j], NULL);
-    }
-  }
-
-  return lex;
-}
-
-struct token lex_next_token(struct lex_syn lex, FILE *infile) {
-
-  //build the default token to return
-  struct token t;
-  t.t = -1;
-  memset(t.l, 0, sizeof(t.l));
-
-  //keep track of the length of the lexem
-  int lexem_size = 0;
-
-  //keep track of the current character
-  static char c = 0;
-
-  //if a character has not been passed from the previous stage, get another
-  if(c == 0) {
-    c = fgetc(infile);
-  }
-
-  //check for newline
-  if(c == '\n') {
-    t.l[lexem_size++] = c;
-    t.t = -2;
-    c = fgetc(infile);
-    return t; //return newline token
-  }
-
-  //check for eof
-  if(c == EOF) {
-    t.l[lexem_size++] = c;
-    t.t = -3;
-    c = fgetc(infile);
-    return t; //return eof token
-  }
-
-  //start at the first stage and continue
-  int stage = 0;
-  int newstage = 0;
-  int match_found = 0;
-  
-  //continue to check for matches until entire token is found or error
-  do {
-
-    //check for match
-    match_found = 0;
-    for(int col = 0; col < lex.cols; col++) { //each col
-      for(char *m = lex.matches[col]; *m != '\0'; m++) { //each char in match
-
-        //compare matches[c][n] to input[i]
-        //also treat newlines and eofs as spaces
-        if((*m == ' ' && (c == '\n' || c == EOF)) || *m == c) {
-          newstage = lex.table[stage][col];
-          match_found = 1;
-          break;
-        }
-      }
-
-      //already found, so break
-      if(match_found == 1) {
-        break;
-      }
-    }
-
-    //if a match was found
-    bool not_cycling = false;
-    if(match_found == 1) {
-      //printf("match found in stage: %d, newstage: %d\n", stage, newstage);
-      
-      //as long as not cycling in stage 0 (usually whitespace only)
-      if(stage != 0 || newstage != 0) {
-
-        //check if success (returning to stage 0)
-        if(newstage == 0) {
-          t.t = lex.table[stage][lex.cols-1];
-          return t;
-        }
-
-        //still getting chars so push the character onto the lexem
-        else {
-          t.l[lexem_size++] = c;
-        }
-
-        //move to the new stage
-        stage = newstage;
-
-        //check if error stage
-        if(stage == -1) {
-          t.t = -1;
-          return t;
-        }
-      }
-    }
-
-    //get another character
-    c = fgetc(infile);
-
-  } while(match_found);
-
-  t.l[lexem_size++] = c;
-  return t;
-}
-
-
-//modified strtok that takes into account empty strings
-//courtesy of http://www.tek-tips.com/viewthread.cfm?qid=294161
-char* xstrtok(char *line, char *delims) {
-  static char *saveline = NULL;
-  char *p;
-  int n;
-
-  if(line != NULL) {
-    saveline = line;
-  }
-
-  /*
-  *see if we have reached the end of the line 
-  */
-  if(saveline == NULL || *saveline == '\0') {
-    return(NULL);
-  }
-
-  /*
-  *return the number of characters that aren't delims 
-  */
-  n = strcspn(saveline, delims);
-  p = saveline; /*save start of this token*/
-
-  saveline += n; /*bump past the delim*/
-
-  /*trash the delim if necessary*/
-  if(*saveline != '\0') {
-    *saveline++ = '\0';
-  }
-
-  return p;
 }

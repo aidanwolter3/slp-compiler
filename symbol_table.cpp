@@ -10,7 +10,7 @@
 #include "symbol_table.h"
 
 //global symbol table
-struct symbol_table sym_table;
+struct symbol_table_s sym_table;
 
 void symbol_table_init() {
   sym_table.size = 0;
@@ -36,7 +36,7 @@ int symbol_table_add(int token, char *lexem, int type) {
     }
   }
   if(!sym_found) {
-    struct symbol sym;
+    struct symbol_s sym;
     sym.t = token;
     sym.type = 0; //initialize to 0 for now
     sym.name = (char*)malloc(sizeof(lexem));

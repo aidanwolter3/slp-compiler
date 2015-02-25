@@ -4,15 +4,15 @@
 // 2/26/2015
 
 //a single symbol for the symbol table
-struct symbol {
+struct symbol_s {
   char *name;
   int t;
   int type;
 };
 
 //symbol table
-struct symbol_table {
-  struct symbol d[100];
+struct symbol_table_s {
+  struct symbol_s d[100];
   int size;
 };
 
