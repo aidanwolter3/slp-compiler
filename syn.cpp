@@ -21,10 +21,6 @@
 extern struct symbol_table_s sym_table;
 extern struct lex_table_s lex_table;
 
-//#define DEBUG
-
-
-
 int parse_table_col_from_token(struct token_s t, char ***parse_table, int cols);
 
 //main method
@@ -81,15 +77,10 @@ int main(int argc, char *argv[]) {
     symbol_table_add(t.t, t.l, 0); //type = 0 for now
   }
 
-  #ifdef DEBUG
-  printf("t: %d %s\n", t.t, t.l);
-  #endif
-
   while(true) {
 
     //error in lexer
     if(t.t == -1) {
-      printf("Error: Lexer found unrecognized token '%s' on line %d\n", t.l, line);
       symbol_table_dump();
       break;
     }
@@ -103,10 +94,6 @@ int main(int argc, char *argv[]) {
       if(t.t == 1) {
         symbol_table_add(t.t, t.l, 0); //type = 0 for now
       }
-
-      #ifdef DEBUG
-      printf("t: %d %s\n", t.t, t.l);
-      #endif
     }
 
     //follow the table
@@ -291,10 +278,6 @@ int main(int argc, char *argv[]) {
         if(t.t == 1) {
           symbol_table_add(t.t, t.l, 0); //type = 0 for now
         }
-
-        #ifdef DEBUG
-        printf("t: %d %s\n", t.t, t.l);
-        #endif
       }
 
       //accept command

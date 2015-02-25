@@ -25,3 +25,4 @@ struct lex_table_s {
 
 void build_lex(FILE *sfile);
 struct token_s lex_next_token(FILE *infile);
+void throw_unknown_token(char *line, int line_index, int line_number, struct token_s t);

@@ -5,6 +5,9 @@
 
 #include "lexical_analyzer.h"
 
+//#define LEXDEBUG
+
+//global lex table
 struct lex_table_s lex_table;
 
 //build the lex_table table from a file
@@ -33,28 +36,49 @@ void build_lex(FILE *sfile) {
 //return the next valid token from the given file
 struct token_s lex_next_token(FILE *infile) {
 
-  //build the default token to return
+  //keep track of the entire line
+  static char *cur_line = (char*)malloc(1024*sizeof(char*));
+  static int cur_line_cnt = 0;
+
+  //keep track of the line number
+  static int line_number = 1;
+
+  //the current token we are discovering
   struct token_s t;
   t.t = -1;
   memset(t.l, 0, sizeof(t.l));
-
-  //keep track of the length of the lexem
   int lexem_size = 0;
 
-  //keep track of the current character
+  //the last read character, initialize to a new read
   static char c = 0;
-
-  //if a character has not been passed from the previous stage, get another
   if(c == 0) {
     c = fgetc(infile);
+    cur_line[cur_line_cnt++] = c;
   }
+
+  //hold how far in the line we have parsed
+  static int line_index = 1;
 
   //check for newline
   if(c == '\n') {
+    line_number++;
+    line_index = 0;
+
+    //reset the current line
+    memset(cur_line, 0, 1024);
+    cur_line_cnt = 0;
+
+    //return newline token
     t.l[lexem_size++] = c;
     t.t = -2;
     c = fgetc(infile);
-    return t; //return newline token
+    cur_line[cur_line_cnt++] = c;
+
+    #ifdef LEXDEBUG
+    printf("t: %d %s\n", t.t, t.l);
+    #endif
+
+    return t;
   }
 
   //check for eof
@@ -62,19 +86,24 @@ struct token_s lex_next_token(FILE *infile) {
     t.l[lexem_size++] = c;
     t.t = -3;
     c = fgetc(infile);
+    cur_line[cur_line_cnt++] = c;
+
+    #ifdef LEXDEBUG
+    printf("t: %d %s\n", t.t, t.l);
+    #endif
+
     return t; //return eof token
   }
 
-  //start at the first stage and continue
+
+  //as long as we can find a match in the lex_table
+  bool match_found;
   int stage = 0;
   int newstage = 0;
-  int match_found = 0;
-  
-  //continue to check for matches until entire token is found or error
   do {
 
     //check for match
-    match_found = 0;
+    match_found = false;
     for(int col = 0; col < lex_table.cols; col++) { //each col
       for(char *m = lex_table.matches[col]; *m != '\0'; m++) { //each char in match
 
@@ -82,54 +111,87 @@ struct token_s lex_next_token(FILE *infile) {
         //also treat newlines and eofs as spaces
         if((*m == ' ' && (c == '\n' || c == EOF)) || *m == c) {
           newstage = lex_table.table[stage][col];
-          match_found = 1;
+          //printf("match found in stage: %d, newstage: %d\n", stage, newstage);
+          match_found = true;
           break;
         }
       }
 
       //already found, so break
-      if(match_found == 1) {
+      if(match_found) {
         break;
       }
     }
 
-    //if a match was found
-    bool not_cycling = false;
-    if(match_found == 1) {
-      //printf("match found in stage: %d, newstage: %d\n", stage, newstage);
-      
-      //as long as not cycling in stage 0 (usually whitespace only)
-      if(stage != 0 || newstage != 0) {
-
-        //check if success (returning to stage 0)
-        if(newstage == 0) {
-          t.t = lex_table.table[stage][lex_table.cols-1];
-          return t;
-        }
-
-        //still getting chars so push the character onto the lexem
-        else {
-          t.l[lexem_size++] = c;
-        }
-
-        //move to the new stage
-        stage = newstage;
-
-        //check if error stage
-        if(stage == -1) {
-          t.t = -1;
-          return t;
-        }
-      }
+    //error
+    if(newstage == -1 || !match_found) {
+      break;
     }
 
-    //get another character
-    c = fgetc(infile);
+    //cycling in stage 0 so get another character (0 to 0)
+    else if(newstage == 0 && stage == 0) {
+      c = fgetc(infile);
+      cur_line[cur_line_cnt++] = c;
+      line_index++;
+    }
+
+    //jumped to stage 0 so success (# to 0)
+    else if(newstage == 0) {
+      t.t = lex_table.table[stage][lex_table.cols-1];
+
+      #ifdef LEXDEBUG
+      printf("t: %d %s\n", t.t, t.l);
+      #endif
+
+      return t;
+    }
+
+    //started token (0 to #)
+    else if(stage == 0) {
+      stage = newstage;
+      t.l[lexem_size++] = c;
+      c = fgetc(infile);
+      cur_line[cur_line_cnt++] = c;
+      line_index++;
+    }
+
+    //still reading token (# to #)
+    else {
+      stage = newstage;
+      t.l[lexem_size++] = c;
+      c = fgetc(infile);
+      cur_line[cur_line_cnt++] = c;
+      line_index++;
+    }
 
   } while(match_found);
 
-  //if match wasn't found flush out the chars until a newline
-
+  //no match so return error
   t.l[lexem_size++] = c;
+
+  //read char until \n or eof
+  c = fgetc(infile);
+  while(c != '\n' && c != EOF) {
+    cur_line[cur_line_cnt++] = c;
+    c = fgetc(infile);
+  }
+
+  throw_unknown_token(cur_line, line_index, line_number, t);
+
+  #ifdef LEXDEBUG
+  printf("t: %d %s\n", t.t, t.l);
+  #endif
+
   return t;
+}
+
+//print an error message indicated where the unrecognized token is
+void throw_unknown_token(char *line, int line_index, int line_number, struct token_s t) {
+  printf("Error: Lexer found unrecognized token '%s' on line %d\n", t.l, line_number);
+  printf("\t%s\n", line);
+  printf("\t");
+  for(int i = 0; i < line_index; i++) {
+    printf(" ");
+  }
+  printf("^\n");
 }
