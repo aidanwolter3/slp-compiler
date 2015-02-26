@@ -95,10 +95,12 @@ int syntax_analyzer_parse(FILE *infile) {
 
         //throw syntax error as long as no lex error
         if(t.t != -1) {
+          s_stack[0] = 0;   //start in state 0
+          t_stack_cnt = 0;
+          s_stack_cnt = 1;
           throw_unexpected_token(error_t, error_state);
         }
         continue;
-        //return 0;
       }
 
       #ifdef SYNDEBUG
