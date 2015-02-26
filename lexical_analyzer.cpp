@@ -15,7 +15,7 @@ char *cur_line = (char*)malloc(1024*sizeof(char*));
 int cur_line_cnt = 0;
 
 //keep track of the line number
-int line_number = 0;
+int line_number = 1;
 int line_index = 0;
 
 //build the lex_table table from a file

@@ -16,7 +16,9 @@ extern int line_index;
 //global parse table
 struct parse_table_s parse_table;
 
+//keep track of where the error is even when finishing off the line
 int last_line_index = 0;
+int last_line_number = 1;
 
 //construct the parse table from the csv
 void build_parse_table(FILE *pfile) {
@@ -29,7 +31,6 @@ int syntax_analyzer_parse(FILE *infile) {
   bool error_found = false;
 
   //continue parsing until error or accept
-  int line = 1;
   int t_stack[256]; //token stack
   int s_stack[256]; //state stack
   s_stack[0] = 0;   //start in state 0
@@ -45,7 +46,17 @@ int syntax_analyzer_parse(FILE *infile) {
 
     //error in lexer, so continue
     if(t.t == -1) {
+      error_found = true;
+
+      //save where the error was found
       last_line_index = line_index;
+
+      //reset the stacks
+      s_stack[0] = 0;   //start in state 0
+      s_stack_cnt = 1;
+      t_stack_cnt = 0;
+
+      //get the next token
       t = lex_next_token(infile);
       if(t.t == 1) {
         symbol_table_add(t.t, t.l, 0); //type = 0 for now
@@ -54,7 +65,6 @@ int syntax_analyzer_parse(FILE *infile) {
 
     //newline
     else if(t.t == -2) {
-      line++;
 
       //get another token
       last_line_index = line_index;
@@ -86,19 +96,28 @@ int syntax_analyzer_parse(FILE *infile) {
         int error_state = state;
         error_t.t = t.t;
         strcpy(error_t.l, t.l);
+        last_line_number = line_number;
 
-        //continue grabbing tokens until error or \n or eof
+        //continue grabbing tokens until or \n or eof
         t = lex_next_token(infile);
-        while(t.t > 0) {
+        while(t.t != -2 && t.t != -3) {
           t = lex_next_token(infile);
         }
 
         //throw syntax error as long as no lex error
         if(t.t != -1) {
-          s_stack[0] = 0;   //start in state 0
-          t_stack_cnt = 0;
-          s_stack_cnt = 1;
           throw_unexpected_token(error_t, error_state);
+        }
+
+        //reset the stacks
+        s_stack[0] = 0;   //start in state 0
+        s_stack_cnt = 1;
+        t_stack_cnt = 0;
+
+        //get another token
+        t = lex_next_token(infile);
+        if(t.t == 1) {
+          symbol_table_add(t.t, t.l, 0); //type = 0 for now
         }
         continue;
       }
@@ -246,7 +265,9 @@ int syntax_analyzer_parse(FILE *infile) {
 
       //accept command
       else if(cmd[0] == 'a') {
-        printf("The file has proper syntax\n");
+        if(!error_found) {
+          printf("The file has proper syntax\n");
+        }
         return 0;
       }
 
@@ -315,7 +336,7 @@ void throw_unexpected_token(struct token_s t, int state) {
   options_str[options_str_len++] = '}';
   options_str[options_str_len] = '\0';
 
-  printf("Error: Syntax analyzer found '%s' on line %d while expecting one of the set %s\n", t.l, line_number, options_str);
+  printf("Error: Syntax analyzer found '%s' on line %d while expecting one of the set %s\n", t.l, last_line_number, options_str);
   printf("\t%s\n", cur_line);
   printf("\t");
   for(int i = 0; i < last_line_index; i++) {
