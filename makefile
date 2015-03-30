@@ -1,9 +1,11 @@
-OBJ_FILES := $(wildcard src/obj/*.o)
+CPP_FILES := $(wildcard src/*.cpp) $(wildcard src/**/*.cpp)
+OBJ_FILES := $(addprefix src/obj/, $(notdir $(CPP_FILES:.cpp=.o)))
 
-all:
-	(cd src; make)
+all: $(OBJ_FILES)
 	g++ compiler.cpp $(OBJ_FILES) -o compiler 
 
+$(OBJ_FILES):
+	(cd src; make)
 clean:
 	(cd src; make clean)
 	rm compiler

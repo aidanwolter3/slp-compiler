@@ -1,3 +1,6 @@
+#ifndef PARSE_TREE
+#define PARSE_TREE
+
 #include "ParseTreeNode.h"
 
 class ParseTree {
@@ -12,3 +15,5 @@ class ParseTree {
     ParseTreeNode pop();
     void push(ParseTreeNode new_node);
 };
+
+#endif
