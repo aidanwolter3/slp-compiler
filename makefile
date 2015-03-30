@@ -1,19 +1,9 @@
-all: syn.cpp symbol_table.o lexical_analyzer.o syntax_analyzer.o parse_csv.o
-	g++ syn.cpp symbol_table.o lexical_analyzer.o syntax_analyzer.o parse_csv.o -o syn
-	./syn test
+OBJ_FILES := $(wildcard src/obj/*.o)
 
-symbol_table.o: symbol_table.cpp
-	g++ -c symbol_table.cpp -o symbol_table.o
-
-lexical_analyzer.o: lexical_analyzer.cpp
-	g++ -c lexical_analyzer.cpp -o lexical_analyzer.o
-
-syntax_analyzer.o: syntax_analyzer.cpp
-	g++ -c syntax_analyzer.cpp -o syntax_analyzer.o
-
-parse_csv.o: parse_csv.cpp
-	g++ -c parse_csv.cpp -o parse_csv.o
+all:
+	(cd src; make)
+	g++ compiler.cpp $(OBJ_FILES) -o compiler 
 
 clean:
-	rm *.o
-	rm syn
+	(cd src; make clean)
+	rm compiler

@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "parse_csv.h"
+#include "parse_csv/parse_csv.h"
 
 //a token including the decimal value 't' and the lexem 'l'
 struct token_s {

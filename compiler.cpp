@@ -14,9 +14,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "symbol_table.h"
-#include "lexical_analyzer.h"
-#include "syntax_analyzer.h"
+#include "src/symbol_table/symbol_table.h"
+#include "src/lexical_analyzer.h"
+#include "src/syntax_analyzer.h"
+//#include "ParseTree.h"
 
 extern struct symbol_table_s sym_table;
 
@@ -40,7 +41,7 @@ int main(int argc, char *argv[]) {
   //get the input file
   if(argc == 1) {
     printf("Please add the input file to the arguments\n");
-    printf("(example ./syn test)\n");
+    printf("(example ./compiler test)\n");
     return 0;
   }
   FILE *infile = fopen(argv[1], "r");
@@ -61,13 +62,19 @@ int main(int argc, char *argv[]) {
   build_parse_table(pfile);
   fclose(pfile);
 
+  //create the parse tree
+  //ParseTree parseTree = ParseTree();
+  //char id_lexem[2];
+  //id_lexem[0] = 'a';
+  //id_lexem[1] = '0';
+  //IdExpression id = IdExpression(id_lexem);
+  //parseTree.push(IdExpression);
+  //PrettyPrintVisitor v = PrettyPrintVisitor();
+  //parseTree.get_root().accept(v);
+
   //complete the parsing
   syntax_analyzer_parse(infile);
 
   symbol_table_dump();
   return 0;
 }
-
-
-
-

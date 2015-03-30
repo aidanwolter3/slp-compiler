@@ -8,8 +8,8 @@
 #include <stdlib.h>
 
 #include "lexical_analyzer.h"
-#include "symbol_table.h"
-#include "parse_csv.h"
+#include "symbol_table/symbol_table.h"
+#include "parse_csv/parse_csv.h"
 
 struct parse_table_s {
   int rows;
