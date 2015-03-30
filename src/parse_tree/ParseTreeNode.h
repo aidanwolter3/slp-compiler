@@ -1,15 +1,64 @@
+#ifndef VISITOR
+#define VISITOR
+
+class CompoundStatement;
+class AssignStatement;
+class PrintStatement;
+class IdExpression;
+class NumExpression;
+class OperationExpression;
+class SequenceExpression;
+class PairExpressionList;
+class LastExpressionList;
+class Plus;
+class Minus;
+class Divide;
+class Multiply;
+class Visitor {
+  public:
+    virtual void visit(CompoundStatement *s) = 0;
+    virtual void visit(AssignStatement *s) = 0;
+    virtual void visit(PrintStatement *s) = 0;
+    virtual void visit(IdExpression *s) = 0;
+    virtual void visit(NumExpression *s) = 0;
+    virtual void visit(OperationExpression *s) = 0;
+    virtual void visit(SequenceExpression *s) = 0;
+    virtual void visit(PairExpressionList *s) = 0;
+    virtual void visit(LastExpressionList *s) = 0;
+    virtual void visit(Plus *s) = 0;
+    virtual void visit(Minus *s) = 0;
+    virtual void visit(Divide *s) = 0;
+    virtual void visit(Multiply *s) = 0;
+};
+
+#endif
+
 #ifndef PARSE_TREE_NODE
 #define PARSE_TREE_NODE
 
-//#include "Visitor.h"
-
-//root class
+//abstract root node class
 class ParseTreeNode {
-  //void accept(Visitor v);
+  public:
+    virtual void accept(Visitor *v) = 0;
 };
-class Statement : ParseTreeNode {};
-class ExpressionList : ParseTreeNode {};
-class BinaryOperation : ParseTreeNode {};
-class Expression : ParseTreeNode {};
+
+//branches off root node class
+//has virtual functions to be overridden
+class Statement : public ParseTreeNode {
+  public:
+    void accept(Visitor *v) {}
+};
+class ExpressionList : public ParseTreeNode {
+  public:
+    void accept(Visitor *v) {}
+};
+class BinaryOperation : public ParseTreeNode {
+  public:
+    void accept(Visitor *v) {}
+};
+class Expression : public ParseTreeNode {
+  public:
+    void accept(Visitor *v) {}
+};
 
 #endif

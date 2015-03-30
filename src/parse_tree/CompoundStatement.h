@@ -3,9 +3,11 @@
 
 #include "ParseTreeNode.h"
 
-class CompoundStatement : Statement {
-  Statement stm1, stm2;
-  CompoundStatement(Statement stm1, Statement stm2);
+class CompoundStatement : public Statement {
+  public:
+    Statement *stm1, *stm2;
+    CompoundStatement(Statement *s1, Statement *s2);
+    void accept(Visitor *v);
 };
 
 #endif

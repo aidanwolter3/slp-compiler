@@ -17,7 +17,8 @@
 #include "src/symbol_table/symbol_table.h"
 #include "src/lexical_analyzer.h"
 #include "src/syntax_analyzer.h"
-//#include "ParseTree.h"
+#include "src/parse_tree/ParseTree.h"
+#include "src/parse_tree/PrettyPrintVisitor.cpp"
 
 extern struct symbol_table_s sym_table;
 
@@ -63,18 +64,30 @@ int main(int argc, char *argv[]) {
   fclose(pfile);
 
   //create the parse tree
-  //ParseTree parseTree = ParseTree();
-  //char id_lexem[2];
-  //id_lexem[0] = 'a';
-  //id_lexem[1] = '0';
-  //IdExpression id = IdExpression(id_lexem);
-  //parseTree.push(IdExpression);
-  //PrettyPrintVisitor v = PrettyPrintVisitor();
-  //parseTree.get_root().accept(v);
+  ParseTree parseTree = ParseTree();
+  NumExpression num1 = NumExpression(1);
+  NumExpression num2 = NumExpression(2);
+  Multiply op = Multiply();
+  OperationExpression exp = OperationExpression(&num1, &num2, &op);
+
+  char l[2];
+  l[0] = 'a';
+  l[1] = 0;
+  IdExpression id = IdExpression(l);
+  AssignStatement assign = AssignStatement(&id, &exp);
+
+  LastExpressionList explist = LastExpressionList(&id);
+  PrintStatement print = PrintStatement(&explist);
+
+  CompoundStatement prog = CompoundStatement(&assign, &print);
+  parseTree.push(&prog);
+
+  PrettyPrintVisitor v = PrettyPrintVisitor();
+  parseTree.get_root()->accept(&v);
 
   //complete the parsing
-  syntax_analyzer_parse(infile);
+  //syntax_analyzer_parse(infile);
 
-  symbol_table_dump();
+  //symbol_table_dump();
   return 0;
 }
