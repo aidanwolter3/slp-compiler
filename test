@@ -1,2 +1,2 @@
-a :=      9;
-print(hi);
+b := 9 + 8;
+print(c);
