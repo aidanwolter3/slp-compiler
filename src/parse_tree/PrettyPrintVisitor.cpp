@@ -16,13 +16,13 @@
 class PrettyPrintVisitor : public Visitor {
   void visit(CompoundStatement *s) {
     s->stm1->accept(this);
-    printf("\n");
     s->stm2->accept(this);
   }
   void visit(AssignStatement *stm) {
     stm->id->accept(this);
     printf(" := ");
     stm->exp->accept(this);
+    printf("\n");
   }
   void visit(PrintStatement *stm) {
     printf("print(");

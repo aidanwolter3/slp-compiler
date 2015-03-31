@@ -46,3 +46,7 @@ int symbol_table_add(int token, char *lexem, int type) {
 
   return sym_found ? 0 : -1;
 }
+
+struct symbol_s symbol_table_get_last() {
+  return sym_table.d[sym_table.size-1];
+}

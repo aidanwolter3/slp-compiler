@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "ParseTree.h"
 
@@ -17,6 +18,5 @@ ParseTreeNode* ParseTree::pop() {
 }
 
 void ParseTree::push(ParseTreeNode *new_node) {
-  nodes[size] = new_node;
-  size++;
+  nodes[size++] = new_node;
 }

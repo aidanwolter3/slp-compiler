@@ -4,6 +4,7 @@
 // 2/26/2015
 
 #include "syntax_analyzer.h"
+#include "stdlib.h"
 
 //#define SYNDEBUG
 
@@ -28,6 +29,9 @@ void build_parse_table(FILE *pfile) {
 //parse the parse table
 int syntax_analyzer_parse(FILE *infile) {
 
+  //initialize the parse tree
+  ParseTree parseTree = ParseTree();
+
   bool error_found = false;
 
   //continue parsing until error or accept
@@ -37,9 +41,20 @@ int syntax_analyzer_parse(FILE *infile) {
   int t_stack_cnt = 0;
   int s_stack_cnt = 1;
   struct token_s t = lex_next_token(infile);
+  struct token_s last_t = {};
+  char *stopstr;
 
   if(t.t == 1) {
     symbol_table_add(t.t, t.l, 0); //type = 0 for now
+    char *lexem = (char*)malloc(sizeof(t.l));
+    strcpy(lexem, t.l);
+    IdExpression id = IdExpression(lexem);
+    parseTree.push(&id);
+  }
+  if(t.t == 3) {
+    int val = strtod(t.l, &stopstr);
+    NumExpression num = NumExpression(val);
+    parseTree.push(&num);
   }
 
   while(true) {
@@ -57,9 +72,19 @@ int syntax_analyzer_parse(FILE *infile) {
       t_stack_cnt = 0;
 
       //get the next token
+      memcpy(&last_t, &t, sizeof(t));
       t = lex_next_token(infile);
       if(t.t == 1) {
         symbol_table_add(t.t, t.l, 0); //type = 0 for now
+        char *lexem = (char*)malloc(sizeof(t.l));
+        strcpy(lexem, t.l);
+        IdExpression id = IdExpression(lexem);
+        parseTree.push(&id);
+      }
+      if(t.t == 3) {
+        int val = strtod(t.l, &stopstr);
+        NumExpression num = NumExpression(val);
+        parseTree.push(&num);
       }
     }
 
@@ -68,9 +93,19 @@ int syntax_analyzer_parse(FILE *infile) {
 
       //get another token
       last_line_index = line_index;
+      memcpy(&last_t, &t, sizeof(t));
       t = lex_next_token(infile);
       if(t.t == 1) {
         symbol_table_add(t.t, t.l, 0); //type = 0 for now
+        char *lexem = (char*)malloc(sizeof(t.l));
+        strcpy(lexem, t.l);
+        IdExpression id = IdExpression(lexem);
+        parseTree.push(&id);
+      }
+      if(t.t == 3) {
+        int val = strtod(t.l, &stopstr);
+        NumExpression num = NumExpression(val);
+        parseTree.push(&num);
       }
     }
 
@@ -99,8 +134,10 @@ int syntax_analyzer_parse(FILE *infile) {
         last_line_number = line_number;
 
         //continue grabbing tokens until or \n or eof
+        memcpy(&last_t, &t, sizeof(t));
         t = lex_next_token(infile);
         while(t.t != -2 && t.t != -3) {
+          memcpy(&last_t, &t, sizeof(t));
           t = lex_next_token(infile);
         }
 
@@ -115,9 +152,19 @@ int syntax_analyzer_parse(FILE *infile) {
         t_stack_cnt = 0;
 
         //get another token
+        memcpy(&last_t, &t, sizeof(t));
         t = lex_next_token(infile);
         if(t.t == 1) {
           symbol_table_add(t.t, t.l, 0); //type = 0 for now
+          char *lexem = (char*)malloc(sizeof(t.l));
+          strcpy(lexem, t.l);
+          IdExpression id = IdExpression(lexem);
+          parseTree.push(&id);
+        }
+        if(t.t == 3) {
+          int val = strtod(t.l, &stopstr);
+          NumExpression num = NumExpression(val);
+          parseTree.push(&num);
         }
         continue;
       }
@@ -141,6 +188,11 @@ int syntax_analyzer_parse(FILE *infile) {
           pop_size = 3;
           rep_token.t = 13;
           rep_token.l[0] = 'S';
+
+          Statement *stm2 = (Statement*)parseTree.pop();
+          Statement *stm1 = (Statement*)parseTree.pop();
+          CompoundStatement stm = CompoundStatement(stm1, stm2);
+          parseTree.push(&stm);
         }
 
         //id:=E
@@ -148,6 +200,11 @@ int syntax_analyzer_parse(FILE *infile) {
           pop_size = 3;
           rep_token.t = 13;
           rep_token.l[0] = 'S';
+
+          Expression *exp = (Expression*)parseTree.pop();
+          IdExpression *id = (IdExpression*)parseTree.pop();
+          AssignStatement stm = AssignStatement(id, exp);
+          parseTree.push(&stm);
         }
 
         //print(L)
@@ -155,6 +212,10 @@ int syntax_analyzer_parse(FILE *infile) {
           pop_size = 4;
           rep_token.t = 13;
           rep_token.l[0] = 'S';
+
+          //ExpressionList *explist = (ExpressionList*)parseTree.pop();
+          //PrintStatement print = PrintStatement(explist);
+          //parseTree.push(&print);
         }
 
         //epsilon
@@ -250,16 +311,29 @@ int syntax_analyzer_parse(FILE *infile) {
 
       //shift
       else if(cmd[0] == 's') {
-        char *stopstr;
         int newstate = strtod(&cmd[1], &stopstr);
         t_stack[t_stack_cnt++] = t.t;
         s_stack[s_stack_cnt++] = newstate;
 
         //get another token
         last_line_index = line_index;
+        memcpy(&last_t, &t, sizeof(t));
         t = lex_next_token(infile);
+
+        //if an id
         if(t.t == 1) {
           symbol_table_add(t.t, t.l, 0); //type = 0 for now
+          char *lexem = (char*)malloc(sizeof(t.l));
+          strcpy(lexem, t.l);
+          IdExpression id = IdExpression(lexem);
+          parseTree.push(&id);
+        }
+
+        //if a num
+        if(t.t == 3) {
+          int val = strtod(t.l, &stopstr);
+          NumExpression num = NumExpression(val);
+          parseTree.push(&num);
         }
       }
 
@@ -268,6 +342,10 @@ int syntax_analyzer_parse(FILE *infile) {
         if(!error_found) {
           printf("The file has proper syntax\n");
         }
+
+        PrettyPrintVisitor v = PrettyPrintVisitor();
+        parseTree.get_root()->accept(&v);
+
         return 0;
       }
 

@@ -23,5 +23,6 @@ struct symbol_table_s {
 void symbol_table_init();
 void symbol_table_dump();
 int symbol_table_add(int token, char *lexem, int type);
+struct symbol_s symbol_table_get_last();
 
 #endif
