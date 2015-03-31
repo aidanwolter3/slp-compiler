@@ -1,2 +1,8 @@
-b := 9 + 8;
-print(c);
+b := 7 + 0;
+print(hi, 9, what);
+a :=
+  baby -
+  90000;
+a := baby* 90000;
+a := baby/ 90000;
+

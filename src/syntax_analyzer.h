@@ -12,6 +12,7 @@
 #include "parse_csv/parse_csv.h"
 #include "parse_tree/ParseTree.h"
 #include "parse_tree/PrettyPrintVisitor.cpp"
+#include "parse_tree/VariableEvaluatorVisitor.cpp"
 
 struct parse_table_s {
   int rows;

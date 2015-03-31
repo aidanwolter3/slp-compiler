@@ -4,7 +4,8 @@
 // 2/26/2015
 
 #include "syntax_analyzer.h"
-#include "stdlib.h"
+#include <stdlib.h>
+#include <string.h>
 
 //#define SYNDEBUG
 
@@ -35,7 +36,7 @@ int syntax_analyzer_parse(FILE *infile) {
   bool error_found = false;
 
   //continue parsing until error or accept
-  int t_stack[256]; //token stack
+  struct token_s *t_stack[256]; //token stack
   int s_stack[256]; //state stack
   s_stack[0] = 0;   //start in state 0
   int t_stack_cnt = 0;
@@ -46,17 +47,7 @@ int syntax_analyzer_parse(FILE *infile) {
 
   if(t.t == 1) {
     symbol_table_add(t.t, t.l, 0); //type = 0 for now
-    //char *lexem = (char*)malloc(sizeof(t.l));
-    //strcpy(lexem, t.l);
-    //IdExpression id = IdExpression(lexem);
-    //parseTree.push(&id);
   }
-  //if(t.t == 3) {
-  //  int val = strtod(t.l, &stopstr);
-  //  NumExpression num = NumExpression(val);
-  //  parseTree.push(&num);
-  //  printf("pushed num: %d\n", val);
-  //}
 
   while(true) {
 
@@ -77,17 +68,7 @@ int syntax_analyzer_parse(FILE *infile) {
       t = lex_next_token(infile);
       if(t.t == 1) {
         symbol_table_add(t.t, t.l, 0); //type = 0 for now
-        //char *lexem = (char*)malloc(sizeof(t.l));
-        //strcpy(lexem, t.l);
-        //IdExpression id = IdExpression(lexem);
-        //parseTree.push(&id);
       }
-      //if(t.t == 3) {
-      //  int val = strtod(t.l, &stopstr);
-      //  NumExpression num = NumExpression(val);
-      //  parseTree.push(&num);
-      //  printf("pushed num: %d\n", val);
-      //}
     }
 
     //newline
@@ -99,17 +80,7 @@ int syntax_analyzer_parse(FILE *infile) {
       t = lex_next_token(infile);
       if(t.t == 1) {
         symbol_table_add(t.t, t.l, 0); //type = 0 for now
-        //char *lexem = (char*)malloc(sizeof(t.l));
-        //strcpy(lexem, t.l);
-        //IdExpression id = IdExpression(lexem);
-        //parseTree.push(&id);
       }
-      //if(t.t == 3) {
-      //  int val = strtod(t.l, &stopstr);
-      //  NumExpression num = NumExpression(val);
-      //  parseTree.push(&num);
-      //  printf("pushed num: %d\n", val);
-      //}
     }
 
     else if(t.t == -3 && error_found) {
@@ -159,17 +130,7 @@ int syntax_analyzer_parse(FILE *infile) {
         t = lex_next_token(infile);
         if(t.t == 1) {
           symbol_table_add(t.t, t.l, 0); //type = 0 for now
-          //char *lexem = (char*)malloc(sizeof(t.l));
-          //strcpy(lexem, t.l);
-          //IdExpression id = IdExpression(lexem);
-          //parseTree.push(&id);
         }
-        //if(t.t == 3) {
-        //  int val = strtod(t.l, &stopstr);
-        //  NumExpression num = NumExpression(val);
-        //  parseTree.push(&num);
-        //  printf("pushed num: %d\n", val);
-        //}
         continue;
       }
 
@@ -185,8 +146,6 @@ int syntax_analyzer_parse(FILE *infile) {
         int pop_size; //how much to pop off the stacks
         struct token_s rep_token;//what to push onto the token stack
 
-        printf("prod: %d\n", prod);
-
         //check each production
 
         //S;S
@@ -197,8 +156,8 @@ int syntax_analyzer_parse(FILE *infile) {
 
           Statement *stm2 = (Statement*)parseTree.pop();
           Statement *stm1 = (Statement*)parseTree.pop();
-          CompoundStatement stm = CompoundStatement(stm1, stm2);
-          parseTree.push(&stm);
+          CompoundStatement *stm = new CompoundStatement(stm1, stm2);
+          parseTree.push(stm);
         }
 
         //id:=E
@@ -207,10 +166,12 @@ int syntax_analyzer_parse(FILE *infile) {
           rep_token.t = 13;
           rep_token.l[0] = 'S';
 
+          char *lexem = (char*)malloc(sizeof(t_stack[t_stack_cnt-3]));
+          strcpy(lexem, t_stack[t_stack_cnt-3]->l);
+          IdExpression *id = new IdExpression(lexem);
           Expression *exp = (Expression*)parseTree.pop();
-          IdExpression *id = (IdExpression*)parseTree.pop();
-          AssignStatement stm = AssignStatement(id, exp);
-          parseTree.push(&stm);
+          AssignStatement *stm = new AssignStatement(id, exp);
+          parseTree.push(stm);
         }
 
         //print(L)
@@ -220,8 +181,8 @@ int syntax_analyzer_parse(FILE *infile) {
           rep_token.l[0] = 'S';
 
           ExpressionList *explist = (ExpressionList*)parseTree.pop();
-          PrintStatement print = PrintStatement(explist);
-          parseTree.push(&print);
+          PrintStatement *print = new PrintStatement(explist);
+          parseTree.push(print);
         }
 
         //epsilon
@@ -237,13 +198,10 @@ int syntax_analyzer_parse(FILE *infile) {
           rep_token.t = 14;
           rep_token.l[0] = 'E';
 
-          char lexem[2];
-          lexem[0] = 'a';
-          lexem[1] = 0;
-          IdExpression id = IdExpression(lexem);
-          parseTree.push(&id);
-
-          printf("pushed id: %s\n", lexem);
+          char *lexem = (char*)malloc(sizeof(t_stack[t_stack_cnt-1]));
+          strcpy(lexem, t_stack[t_stack_cnt-1]->l);
+          IdExpression *id = new IdExpression(lexem);
+          parseTree.push(id);
         }
 
         //num
@@ -252,11 +210,9 @@ int syntax_analyzer_parse(FILE *infile) {
           rep_token.t = 14;
           rep_token.l[0] = 'E';
 
-          int val = 6;//strtod(last_t.l, stopstr);
-          NumExpression num = NumExpression(val);
-          parseTree.push(&num);
-
-          printf("pushed num: %d\n", val);
+          int val = strtod((const char*)&t_stack[t_stack_cnt-1]->l, &stopstr);
+          NumExpression *num = new NumExpression(val);
+          parseTree.push(num);
         }
 
         //EBE
@@ -268,8 +224,8 @@ int syntax_analyzer_parse(FILE *infile) {
           Expression *exp2 = (Expression*)parseTree.pop();
           BinaryOperation *op = (BinaryOperation*)parseTree.pop();
           Expression *exp1 = (Expression*)parseTree.pop();
-          OperationExpression exp = OperationExpression(exp1, exp2, op);
-          parseTree.push(&exp);
+          OperationExpression *exp = new OperationExpression(exp1, exp2, op);
+          parseTree.push(exp);
         }
 
         //(S,E)
@@ -280,8 +236,8 @@ int syntax_analyzer_parse(FILE *infile) {
 
           Expression *exp = (Expression*)parseTree.pop();
           Statement *stm = (Statement*)parseTree.pop();
-          SequenceExpression seq = SequenceExpression(stm, exp);
-          parseTree.push(&seq);
+          SequenceExpression *seq = new SequenceExpression(stm, exp);
+          parseTree.push(seq);
         }
 
         //E,L
@@ -292,8 +248,8 @@ int syntax_analyzer_parse(FILE *infile) {
 
           ExpressionList *list = (ExpressionList*)parseTree.pop();
           Expression *exp = (Expression*)parseTree.pop();
-          ExpressionList newlist = PairExpressionList(exp, list);
-          parseTree.push(&newlist);
+          ExpressionList *newlist = new PairExpressionList(exp, list);
+          parseTree.push(newlist);
         }
 
         //E
@@ -309,8 +265,8 @@ int syntax_analyzer_parse(FILE *infile) {
           rep_token.t = 16;
           rep_token.l[0] = 'B';
 
-          Plus plus = Plus();
-          parseTree.push(&plus);
+          Plus *plus = new Plus();
+          parseTree.push(plus);
         }
 
         //-
@@ -319,8 +275,8 @@ int syntax_analyzer_parse(FILE *infile) {
           rep_token.t = 16;
           rep_token.l[0] = 'B';
 
-          Minus minus = Minus();
-          parseTree.push(&minus);
+          Minus *minus = new Minus();
+          parseTree.push(minus);
         }
         
         //*
@@ -329,8 +285,8 @@ int syntax_analyzer_parse(FILE *infile) {
           rep_token.t = 16;
           rep_token.l[0] = 'B';
 
-          Multiply multiply = Multiply();
-          parseTree.push(&multiply);
+          Multiply *multiply = new Multiply();
+          parseTree.push(multiply);
         }
 
         // /
@@ -339,8 +295,8 @@ int syntax_analyzer_parse(FILE *infile) {
           rep_token.t = 16;
           rep_token.l[0] = 'B';
 
-          Divide divide = Divide();
-          parseTree.push(&divide);
+          Divide *divide = new Divide();
+          parseTree.push(divide);
         }
 
         //pop off the size of the production
@@ -348,7 +304,10 @@ int syntax_analyzer_parse(FILE *infile) {
         t_stack_cnt -= pop_size;
 
         //push the replacement token
-        t_stack[t_stack_cnt++] = rep_token.t;
+        struct token_s *tmp = (struct token_s*)malloc(sizeof(struct token_s));
+        tmp->t = rep_token.t;
+        strcpy(tmp->l, rep_token.l);
+        t_stack[t_stack_cnt++] = tmp;
 
         //push the new state from the goto
         int cur_state = s_stack[s_stack_cnt-1];
@@ -360,7 +319,10 @@ int syntax_analyzer_parse(FILE *infile) {
       //shift
       else if(cmd[0] == 's') {
         int newstate = strtod(&cmd[1], &stopstr);
-        t_stack[t_stack_cnt++] = t.t;
+        struct token_s *tmp = (struct token_s*)malloc(sizeof(struct token_s));
+        tmp->t = newstate;
+        strcpy(tmp->l, t.l);
+        t_stack[t_stack_cnt++] = tmp;
         s_stack[s_stack_cnt++] = newstate;
 
         //get another token
@@ -371,19 +333,7 @@ int syntax_analyzer_parse(FILE *infile) {
         //if an id
         if(t.t == 1) {
           symbol_table_add(t.t, t.l, 0); //type = 0 for now
-          //char *lexem = (char*)malloc(sizeof(t.l));
-          //strcpy(lexem, t.l);
-          //IdExpression id = IdExpression(lexem);
-          //parseTree.push(&id);
         }
-
-        //if a num
-        //if(t.t == 3) {
-        //  int val = strtod(t.l, &stopstr);
-        //  NumExpression num = NumExpression(val);
-        //  parseTree.push(&num);
-        //  printf("pushed num: %d\n", val);
-        //}
       }
 
       //accept command
