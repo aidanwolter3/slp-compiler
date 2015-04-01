@@ -8,7 +8,7 @@ class SequenceExpression : public Expression {
     Statement *stm;
     Expression *exp;
     SequenceExpression(Statement *s, Expression *e);
-    void accept(Visitor *v);
+    void* accept(Visitor *v);
 };
 
 #endif

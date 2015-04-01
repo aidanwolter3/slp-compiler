@@ -8,7 +8,7 @@ class PairExpressionList : public ExpressionList {
     Expression *exp;
     ExpressionList *list;
     PairExpressionList(Expression *e, ExpressionList *l);
-    void accept(Visitor *v);
+    void* accept(Visitor *v);
 };
 
 #endif

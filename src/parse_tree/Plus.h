@@ -5,7 +5,7 @@
 
 class Plus : public BinaryOperation {
   public:
-    void accept(Visitor *v);
+    void* accept(Visitor *v);
 };
 
 #endif

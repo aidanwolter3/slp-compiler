@@ -5,6 +5,6 @@ AssignStatement::AssignStatement(IdExpression *i, Expression *e) {
   exp = e;
 }
 
-void AssignStatement::accept(Visitor *v) {
-  v->visit(this);
+void* AssignStatement::accept(Visitor *v) {
+  return v->visit(this);
 }

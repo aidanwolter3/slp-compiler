@@ -9,7 +9,7 @@ class AssignStatement : public Statement {
     IdExpression *id;
     Expression *exp;
     AssignStatement(IdExpression *i, Expression *e);
-    void accept(Visitor *v);
+    void* accept(Visitor *v);
 };
 
 #endif

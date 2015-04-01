@@ -6,6 +6,6 @@ OperationExpression::OperationExpression(Expression *e1, Expression *e2, BinaryO
   op = o;
 }
 
-void OperationExpression::accept(Visitor *v) {
-  v->visit(this);
+void* OperationExpression::accept(Visitor *v) {
+  return v->visit(this);
 }

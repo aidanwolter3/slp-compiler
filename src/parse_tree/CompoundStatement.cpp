@@ -5,6 +5,6 @@ CompoundStatement::CompoundStatement(Statement *s1, Statement *s2) {
   stm2 = s2;
 }
 
-void CompoundStatement::accept(Visitor *v) {
-  v->visit(this);
+void* CompoundStatement::accept(Visitor *v) {
+  return v->visit(this);
 }

@@ -4,6 +4,6 @@ LastExpressionList::LastExpressionList(Expression *e) {
   exp = e;
 }
 
-void LastExpressionList::accept(Visitor *v) {
-  v->visit(this);
+void* LastExpressionList::accept(Visitor *v) {
+  return v->visit(this);
 }

@@ -5,6 +5,6 @@ SequenceExpression::SequenceExpression(Statement *s, Expression *e) {
   exp = e;
 }
 
-void SequenceExpression::accept(Visitor *v) {
-  v->visit(this);
+void* SequenceExpression::accept(Visitor *v) {
+  return v->visit(this);
 }

@@ -320,7 +320,7 @@ int syntax_analyzer_parse(FILE *infile) {
       else if(cmd[0] == 's') {
         int newstate = strtod(&cmd[1], &stopstr);
         struct token_s *tmp = (struct token_s*)malloc(sizeof(struct token_s));
-        tmp->t = newstate;
+        tmp->t = t.t;
         strcpy(tmp->l, t.l);
         t_stack[t_stack_cnt++] = tmp;
         s_stack[s_stack_cnt++] = newstate;
@@ -342,8 +342,14 @@ int syntax_analyzer_parse(FILE *infile) {
           printf("The file has proper syntax\n");
         }
 
+        printf("\nPrettyPrintVisitor results:\n");
         PrettyPrintVisitor v = PrettyPrintVisitor();
         parseTree.get_root()->accept(&v);
+
+        printf("\n\nVariableEvaluatorVisitor results:\n");
+        VariableEvaluatorVisitor v2 = VariableEvaluatorVisitor();
+        parseTree.get_root()->accept(&v2);
+        v2.printVariables();
 
         return 0;
       }
@@ -358,7 +364,7 @@ int syntax_analyzer_parse(FILE *infile) {
       #ifdef SYNDEBUG
       printf("t_stack: ");
       for(int i = 0; i < t_stack_cnt; i++) {
-        printf("%d, ", t_stack[i]);
+        printf("%d, ", t_stack[i]->t);
       }
       printf("\ns_stack: ");
       for(int i = 0; i < s_stack_cnt; i++) {

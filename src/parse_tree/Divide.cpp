@@ -1,5 +1,5 @@
 #include "Divide.h"
 
-void Divide::accept(Visitor *v) {
-  v->visit(this);
+void* Divide::accept(Visitor *v) {
+  return v->visit(this);
 }

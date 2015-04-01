@@ -4,6 +4,6 @@ NumExpression::NumExpression(int v) {
   val = v;
 }
 
-void NumExpression::accept(Visitor *v) {
-  v->visit(this);
+void* NumExpression::accept(Visitor *v) {
+  return v->visit(this);
 }

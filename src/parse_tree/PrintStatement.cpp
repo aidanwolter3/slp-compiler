@@ -4,6 +4,6 @@ PrintStatement::PrintStatement(ExpressionList *l) {
   list = l;
 }
 
-void PrintStatement::accept(Visitor *v) {
-  v->visit(this);
+void* PrintStatement::accept(Visitor *v) {
+  return v->visit(this);
 }

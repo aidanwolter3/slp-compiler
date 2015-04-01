@@ -61,28 +61,6 @@ int main(int argc, char *argv[]) {
   build_parse_table(pfile);
   fclose(pfile);
 
-  //create the parse tree
-  //ParseTree parseTree = ParseTree();
-  //NumExpression num1 = NumExpression(1);
-  //NumExpression num2 = NumExpression(2);
-  //Multiply op = Multiply();
-  //OperationExpression exp = OperationExpression(&num1, &num2, &op);
-
-  //char l[2];
-  //l[0] = 'a';
-  //l[1] = 0;
-  //IdExpression id = IdExpression(l);
-  //AssignStatement assign = AssignStatement(&id, &exp);
-
-  //LastExpressionList explist = LastExpressionList(&id);
-  //PrintStatement print = PrintStatement(&explist);
-
-  //CompoundStatement prog = CompoundStatement(&assign, &print);
-  //parseTree.push(&prog);
-
-  //PrettyPrintVisitor v = PrettyPrintVisitor();
-  //parseTree.get_root()->accept(&v);
-
   //complete the parsing
   syntax_analyzer_parse(infile);
 

@@ -5,6 +5,6 @@ PairExpressionList::PairExpressionList(Expression *e, ExpressionList *l) {
   list = l;
 }
 
-void PairExpressionList::accept(Visitor *v) {
-  v->visit(this);
+void* PairExpressionList::accept(Visitor *v) {
+  return v->visit(this);
 }

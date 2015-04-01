@@ -4,6 +4,6 @@ IdExpression::IdExpression(char *l) {
   lexem = l;
 }
 
-void IdExpression::accept(Visitor *v) {
-  v->visit(this);
+void* IdExpression::accept(Visitor *v) {
+  return v->visit(this);
 }

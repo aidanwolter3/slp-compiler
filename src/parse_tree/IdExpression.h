@@ -7,7 +7,7 @@ class IdExpression : public Expression {
   public:
     char *lexem;
     IdExpression(char* l);
-    void accept(Visitor *v);
+    void* accept(Visitor *v);
 };
 
 #endif

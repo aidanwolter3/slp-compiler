@@ -7,7 +7,7 @@ class PrintStatement : public Statement {
   public:
     ExpressionList *list;
     PrintStatement(ExpressionList *l);
-    void accept(Visitor *v);
+    void* accept(Visitor *v);
 };
 
 #endif

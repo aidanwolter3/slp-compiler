@@ -7,7 +7,7 @@ class NumExpression : public Expression {
   public:
     int val;
     NumExpression(int v);
-    void accept(Visitor *v);
+    void* accept(Visitor *v);
 };
 
 #endif

@@ -7,7 +7,7 @@ class LastExpressionList : public ExpressionList {
   public:
     Expression *exp;
     LastExpressionList(Expression *e);
-    void accept(Visitor *v);
+    void* accept(Visitor *v);
 };
 
 #endif
