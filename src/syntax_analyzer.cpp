@@ -28,10 +28,10 @@ void build_parse_table(FILE *pfile) {
 }
 
 //parse the parse table
-int syntax_analyzer_parse(FILE *infile) {
-
-  //initialize the parse tree
-  ParseTree parseTree = ParseTree();
+int syntax_analyzer_parse(FILE *infile, ParseTree p) {
+  
+  //get the parse tree
+  ParseTree parseTree = p;
 
   bool error_found = false;
 
@@ -339,24 +339,9 @@ int syntax_analyzer_parse(FILE *infile) {
       //accept command
       else if(cmd[0] == 'a') {
         if(!error_found) {
-          printf("The file has proper syntax\n");
+          return 0;
         }
-
-        printf("\nPrettyPrintVisitor results:\n");
-        PrettyPrintVisitor v = PrettyPrintVisitor();
-        parseTree.get_root()->accept(&v);
-
-        //printf("\n\nVariableEvaluatorVisitor results:\n");
-        //VariableEvaluatorVisitor v2 = VariableEvaluatorVisitor();
-        //parseTree.get_root()->accept(&v2);
-        //v2.printVariables();
-
-        printf("\n\nStarting target code generation...\n");
-        CodeGenerator_x86 c = CodeGenerator_x86();
-        parseTree.get_root()->accept(&c);
-        c.print_code();
-
-        return 0;
+        return -1;
       }
 
       //invalid command
@@ -380,7 +365,7 @@ int syntax_analyzer_parse(FILE *infile) {
     }
   }
 
-  return 0;
+  return -1;
 }
 
 //search for the token in the parse table and return the col index

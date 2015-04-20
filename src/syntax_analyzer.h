@@ -11,9 +11,6 @@
 #include "symbol_table/symbol_table.h"
 #include "parse_csv/parse_csv.h"
 #include "parse_tree/ParseTree.h"
-#include "parse_tree/PrettyPrintVisitor.cpp"
-#include "parse_tree/VariableEvaluatorVisitor.h"
-#include "parse_tree/CodeGenerator_x86.h"
 
 struct parse_table_s {
   int rows;
@@ -22,6 +19,6 @@ struct parse_table_s {
 };
 
 void build_parse_table(FILE *pfile);
-int syntax_analyzer_parse(FILE *infile);
+int syntax_analyzer_parse(FILE *infile, ParseTree p);
 int parse_table_col_from_token(struct token_s t);
 void throw_unexpected_token(struct token_s t, int state);

@@ -18,6 +18,11 @@
 #include "src/lexical_analyzer.h"
 #include "src/syntax_analyzer.h"
 
+#include "src/parse_tree/ParseTree.h"
+#include "src/parse_tree/PrettyPrintVisitor.cpp"
+#include "src/parse_tree/VariableEvaluatorVisitor.h"
+#include "src/parse_tree/CodeGenerator_x86.h"
+
 extern struct symbol_table_s sym_table;
 
 
@@ -61,8 +66,28 @@ int main(int argc, char *argv[]) {
   build_parse_table(pfile);
   fclose(pfile);
 
+  //initialize the parse tree
+  ParseTree parseTree = ParseTree();
+
   //complete the parsing
-  syntax_analyzer_parse(infile);
+  int ret = syntax_analyzer_parse(infile, parseTree);
+  if(ret == 0) {
+    printf("The file has proper syntax\n");
+
+    printf("\nPrettyPrintVisitor results:\n");
+    PrettyPrintVisitor v = PrettyPrintVisitor();
+    parseTree.get_root()->accept(&v);
+
+    //printf("\n\nVariableEvaluatorVisitor results:\n");
+    //VariableEvaluatorVisitor v2 = VariableEvaluatorVisitor();
+    //parseTree.get_root()->accept(&v2);
+    //v2.printVariables();
+
+    printf("\n\nStarting target code generation...\n");
+    CodeGenerator_x86 c = CodeGenerator_x86();
+    parseTree.get_root()->accept(&c);
+    c.print_code();
+  }
 
   //symbol_table_dump();
   return 0;
