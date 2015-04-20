@@ -13,6 +13,7 @@
 #include "parse_tree/ParseTree.h"
 #include "parse_tree/PrettyPrintVisitor.cpp"
 #include "parse_tree/VariableEvaluatorVisitor.h"
+#include "parse_tree/CodeGenerator_x86.h"
 
 struct parse_table_s {
   int rows;

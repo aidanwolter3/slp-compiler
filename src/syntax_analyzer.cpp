@@ -346,10 +346,15 @@ int syntax_analyzer_parse(FILE *infile) {
         PrettyPrintVisitor v = PrettyPrintVisitor();
         parseTree.get_root()->accept(&v);
 
-        printf("\n\nVariableEvaluatorVisitor results:\n");
-        VariableEvaluatorVisitor v2 = VariableEvaluatorVisitor();
-        parseTree.get_root()->accept(&v2);
-        v2.printVariables();
+        //printf("\n\nVariableEvaluatorVisitor results:\n");
+        //VariableEvaluatorVisitor v2 = VariableEvaluatorVisitor();
+        //parseTree.get_root()->accept(&v2);
+        //v2.printVariables();
+
+        printf("\n\nStarting target code generation...\n");
+        CodeGenerator_x86 c = CodeGenerator_x86();
+        parseTree.get_root()->accept(&c);
+        c.print_code();
 
         return 0;
       }
