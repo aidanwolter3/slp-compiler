@@ -50,8 +50,10 @@ ret
 
 putchar:
 push eax
+push ebx
+push ecx
 push edx
-push dword [esp+16]
+push dword [esp+20]
 mov ebx,1
 mov edx,esp
 push dword 1
@@ -62,12 +64,14 @@ sub esp,4
 int 0x80
 add esp,20
 pop edx
+pop ecx
+pop ebx
 pop eax
 ret
 
 start:
 mov ebp,esp
-sub esp,8
+sub esp,12
 mov eax,5
 mov ebx,3
 add eax,ebx
@@ -89,7 +93,15 @@ mov eax,[esp-12]
 mov [ebp-8],eax
 push dword [ebp-8]
 call putint
-add esp,8
+mov eax,9000
+mov ebx,90
+sub eax,ebx
+mov ebx,89
+add eax,ebx
+mov [ebp-12],eax
+push dword [ebp-12]
+call putint
+add esp,12
 
 ;exit
 push dword 0
