@@ -118,13 +118,13 @@ void CodeGenerator_x86::release_reg(char *reg) {
   }
 }
 void CodeGenerator_x86::print_code() {
-  len += sprintf(code+len, "add esp,4\n"
+  len += sprintf(code+len, "add esp,%d\n"
                            "\n;exit\n"
                            "push dword 0\n"
                            "mov eax,1\n"
                            "sub esp,12\n"
                            "int 0x80\n"
-                           "add esp,%d\n", symbol_table_get_size()*4);
+                           "add esp,4\n", symbol_table_get_size()*4);
 
   FILE *f = fopen("output.asm", "w");
   printf("%s", code);
@@ -141,6 +141,8 @@ void* CodeGenerator_x86::visit(AssignStatement *stm) {
   CodeReturn *c2 = (CodeReturn*)stm->exp->accept(this);
 
   len += sprintf(code+len, "mov %s,%s\n", c1->tmp, c2->tmp);
+
+  release_reg(c2->tmp);
 
   return new CodeReturn(0, 1);
 }
@@ -177,13 +179,30 @@ void* CodeGenerator_x86::visit(OperationExpression *exp) {
   else if(c2->type == 10) {
     len += sprintf(code+len, "sub %s,%s\n", c1->tmp, c3->tmp);
   }
-  else if (c2->type == 11) {
-    len += sprintf(code+len, "mov eax,%s\n", c1->tmp);
-    len += sprintf(code+len, "mul %s\n", c3->tmp);
+  else if(c2->type == 11) {
+    len += sprintf(code+len, "push eax\n"
+                             "push edx\n"
+                             "mov eax,%s\n"
+                             "div %s\n"
+                             "push %s\n"
+                             "add esp,4\n"
+                             "pop edx\n"
+                             "pop eax\n"
+                             "mov %s,[esp-12]\n", c1->tmp, c3->tmp, c1->tmp, c1->tmp);
   }
-  else if(c2->type == 12) {
-    len += sprintf(code+len, "add %s,%s\n", c1->tmp, c3->tmp);
+  else if (c2->type == 12) {
+    len += sprintf(code+len, "push eax\n"
+                             "push edx\n"
+                             "mov eax,%s\n"
+                             "mul %s\n"
+                             "push %s\n"
+                             "add esp,4\n"
+                             "pop edx\n"
+                             "pop eax\n"
+                             "mov %s,[esp-12]\n", c1->tmp, c3->tmp, c1->tmp, c1->tmp);
   }
+
+  release_reg(c3->tmp);
 
   CodeReturn *c = new CodeReturn(0, 5);
   strcpy(c->tmp, c1->tmp);
@@ -192,7 +211,9 @@ void* CodeGenerator_x86::visit(OperationExpression *exp) {
 void* CodeGenerator_x86::visit(SequenceExpression *exp) {
   CodeReturn *c1 = (CodeReturn*)exp->stm->accept(this);
   CodeReturn *c2 = (CodeReturn*)exp->exp->accept(this);
-  return new CodeReturn(0, 6);
+  CodeReturn *c = new CodeReturn(0, 6);
+  strcpy(c->tmp, c2->tmp);
+  return c;
 }
 void* CodeGenerator_x86::visit(PairExpressionList *exp) {
   CodeReturn *c1 = (CodeReturn*)exp->exp->accept(this);

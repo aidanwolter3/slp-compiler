@@ -62,22 +62,54 @@ ret
 
 start:
 mov ebp,esp
-sub esp,8
+sub esp,12
 mov eax,9
 mov ebx,4
-add eax,ebx
+push eax
+push edx
+mov eax,eax
+div ebx
+push eax
+add esp,4
+pop edx
+pop eax
+mov eax,[esp-12]
 mov [ebp-4],eax
-mov ecx,3
-mov [ebp-8],ecx
+mov eax,10
+mov ebx,4
+push eax
+push edx
+mov eax,eax
+div ebx
+push eax
+add esp,4
+pop edx
+pop eax
+mov eax,[esp-12]
+mov [ebp-8],eax
+mov eax,12
+mov ebx,3
+push eax
+push edx
+mov eax,eax
+div ebx
+push eax
+add esp,4
+pop edx
+pop eax
+mov eax,[esp-12]
+mov [ebp-12],eax
 push dword [ebp-4]
 call putint
 push dword [ebp-8]
 call putint
-add esp,4
+push dword [ebp-12]
+call putint
+add esp,12
 
 ;exit
 push dword 0
 mov eax,1
 sub esp,12
 int 0x80
-add esp,8
+add esp,4

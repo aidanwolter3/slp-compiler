@@ -1,4 +1,6 @@
-dude := 9 + 4;
-hi := 3;
-print(dude);
-print(hi);
+one := 9/4;
+two := 10/4;
+three := 12/3;
+print(one);
+print(two);
+print(three);
