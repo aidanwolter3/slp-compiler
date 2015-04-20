@@ -1,6 +1,1 @@
-one := 9/4;
-two := 10/4;
-three := 12/3;
-print(one);
-print(two);
-print(three);
+a := 5 + 3; b := (print(a, a-1), 10*a); print(b)

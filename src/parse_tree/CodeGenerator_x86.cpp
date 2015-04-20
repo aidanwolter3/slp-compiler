@@ -152,6 +152,8 @@ void* CodeGenerator_x86::visit(PrintStatement *stm) {
   len += sprintf(code+len, "push dword %s\n", c->tmp);
   len += sprintf(code+len, "call putint\n");
 
+  release_reg(c->tmp);
+
   return new CodeReturn(0, 2);
 }
 void* CodeGenerator_x86::visit(IdExpression *exp) {
@@ -183,7 +185,7 @@ void* CodeGenerator_x86::visit(OperationExpression *exp) {
     len += sprintf(code+len, "push eax\n"
                              "push edx\n"
                              "mov eax,%s\n"
-                             "div %s\n"
+                             "div dword %s\n"
                              "push %s\n"
                              "add esp,4\n"
                              "pop edx\n"
@@ -194,7 +196,7 @@ void* CodeGenerator_x86::visit(OperationExpression *exp) {
     len += sprintf(code+len, "push eax\n"
                              "push edx\n"
                              "mov eax,%s\n"
-                             "mul %s\n"
+                             "mul dword %s\n"
                              "push %s\n"
                              "add esp,4\n"
                              "pop edx\n"
@@ -218,11 +220,15 @@ void* CodeGenerator_x86::visit(SequenceExpression *exp) {
 void* CodeGenerator_x86::visit(PairExpressionList *exp) {
   CodeReturn *c1 = (CodeReturn*)exp->exp->accept(this);
   CodeReturn *c2 = (CodeReturn*)exp->list->accept(this);
-  return new CodeReturn(0, 7);
+  CodeReturn *c = new CodeReturn(0, 7);
+  strcpy(c->tmp, c2->tmp);
+  return c;
 }
 void* CodeGenerator_x86::visit(LastExpressionList *exp) {
-  CodeReturn *c = (CodeReturn*)exp->exp->accept(this);
-  return new CodeReturn(0, 8);
+  CodeReturn *c1 = (CodeReturn*)exp->exp->accept(this);
+  CodeReturn *c = new CodeReturn(0, 8);
+  strcpy(c->tmp, c1->tmp);
+  return c;
 }
 void* CodeGenerator_x86::visit(Plus *op) {
   return new CodeReturn(0, 9);

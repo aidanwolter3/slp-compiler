@@ -62,50 +62,29 @@ ret
 
 start:
 mov ebp,esp
-sub esp,12
-mov eax,9
-mov ebx,4
-push eax
-push edx
-mov eax,eax
-div ebx
-push eax
-add esp,4
-pop edx
-pop eax
-mov eax,[esp-12]
+sub esp,8
+mov eax,5
+mov ebx,3
+add eax,ebx
 mov [ebp-4],eax
+mov eax,1
+sub [ebp-4],eax
+push dword [ebp-4]
+call putint
 mov eax,10
-mov ebx,4
 push eax
 push edx
 mov eax,eax
-div ebx
+mul dword [ebp-4]
 push eax
 add esp,4
 pop edx
 pop eax
 mov eax,[esp-12]
 mov [ebp-8],eax
-mov eax,12
-mov ebx,3
-push eax
-push edx
-mov eax,eax
-div ebx
-push eax
-add esp,4
-pop edx
-pop eax
-mov eax,[esp-12]
-mov [ebp-12],eax
-push dword [ebp-4]
-call putint
 push dword [ebp-8]
 call putint
-push dword [ebp-12]
-call putint
-add esp,12
+add esp,8
 
 ;exit
 push dword 0
