@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 
 
   //get the input file
-  if(argc == 1) {
+  if(argc < 2) {
     printf("Please add the input file to the arguments\n");
     printf("(example ./compiler test)\n");
     return 0;
@@ -84,9 +84,17 @@ int main(int argc, char *argv[]) {
     //v2.printVariables();
 
     printf("\n\nStarting target code generation...\n");
-    CodeGenerator_x86 c = CodeGenerator_x86();
-    parseTree.get_root()->accept(&c);
-    c.print_code();
+    const char *target_mac = "mac"+0;
+    if(argc >= 3) {
+      CodeGenerator_x86 *c = new CodeGenerator_x86(argv[2]);
+      parseTree.get_root()->accept(c);
+      c->print_code();
+    }
+    else { //default to mac
+      CodeGenerator_x86 *c = new CodeGenerator_x86(target_mac);
+      parseTree.get_root()->accept(c);
+      c->print_code();
+    }
   }
 
   //symbol_table_dump();

@@ -49,7 +49,10 @@ pop eax
 ret
 
 putchar:
-push dword [esp+4]
+push eax
+push edx
+push dword [esp+16]
+mov ebx,1
 mov edx,esp
 push dword 1
 push dword edx
@@ -58,6 +61,8 @@ mov eax,4
 sub esp,4
 int 0x80
 add esp,20
+pop edx
+pop eax
 ret
 
 start:

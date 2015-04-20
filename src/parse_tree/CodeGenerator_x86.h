@@ -46,7 +46,7 @@ class CodeGenerator_x86 : public Visitor {
         };
     };
   public:
-    CodeGenerator_x86();
+    CodeGenerator_x86(const char *target);
     void print_code();
     void* visit(CompoundStatement *s);
     void* visit(AssignStatement *stm);

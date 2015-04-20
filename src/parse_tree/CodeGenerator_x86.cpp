@@ -1,6 +1,87 @@
 #include "CodeGenerator_x86.h"
 
-CodeGenerator_x86::CodeGenerator_x86() {
+const char *head_mac =    "global start\n"
+                          "section .text\n"+0;
+const char *head_ubu =    "global _start\n"
+                          "section .text\n"+0;
+const char *putint =      "\nputint:\n"
+                          "push eax\n"
+                          "push ebx\n"
+                          "push ecx\n"
+                          "push edx\n"
+                          "mov eax,dword[esp+20]\n"
+                          "mov ecx,0\n"
+                          "push 0\n"
+                          "push 0x0A\n"
+                          "mov ebx,10\n"
+                          ".putint0:\n"
+                          "add ecx,1\n"
+                          "mov dx,0\n"
+                          "div bx\n"
+                          "add edx,0x30\n"
+                          "push edx\n"
+                          "cmp ax,0\n"
+                          "jz .putint1\n"
+                          "jmp .putint0\n"
+                          ".putint1:\n"
+                          "push dword esp\n"
+                          "call putstr\n"
+                          "add esp,4\n"
+                          "lea ecx,[8+4*ecx]\n"
+                          "add esp,ecx\n"
+                          "pop edx\n"
+                          "pop ecx\n"
+                          "pop ebx\n"
+                          "pop eax\n"
+                          "ret\n"+0;
+const char *putstr =      "\nputstr:\n"
+                          "push eax\n"
+                          "mov esi,dword[esp+8]\n"
+                          ".putstr0:\n"
+                          "mov byte al,[esi]\n"
+                          "cmp al,0\n"
+                          "je .putstr1\n"
+                          "push eax\n"
+                          "call putchar\n"
+                          "add esp,4\n"
+                          "add esi,4\n"
+                          "jmp .putstr0\n"
+                          ".putstr1:\n"
+                          "pop eax\n"
+                          "ret\n"+0;
+const char *putchar_mac = "\nputchar:\n"
+                          "push eax\n"
+                          "push edx\n"
+                          "push dword [esp+16]\n"
+                          "mov ebx,1\n"
+                          "mov edx,esp\n"
+                          "push dword 1\n"
+                          "push dword edx\n"
+                          "push dword 1\n"
+                          "mov eax,4\n"
+                          "sub esp,4\n"
+                          "int 0x80\n"
+                          "add esp,20\n"
+                          "pop edx\n"
+                          "pop eax\n"
+                          "ret\n"+0;
+const char *putchar_ubu = "\nputchar:\n"
+                          "push eax\n"
+                          "push ecx\n"
+                          "push edx\n"
+                          "push dword [esp+16]\n"
+                          "mov ebx,1\n"
+                          "mov ecx,esp\n"
+                          "mov edx,1\n"
+                          "mov eax,4\n"
+                          "int 0x80\n"
+                          "add esp,4\n"
+                          "pop edx\n"
+                          "pop ecx\n"
+                          "pop eax\n"
+                          "ret\n"+0;
+
+CodeGenerator_x86::CodeGenerator_x86(const char *target) {
 
   //initialize the code
   code = (char*)malloc(2000*sizeof(char));
@@ -12,68 +93,34 @@ CodeGenerator_x86::CodeGenerator_x86() {
   regs.ecx = 0;
   regs.edx = 0;
 
+  const char *target_mac = "mac"+0;
+  const char *target_ubu = "ubu"+0;
+
   //add the necessary functions for printing an integer
-  len += sprintf(code+len, "global start\n"
-                            "section .text\n");
-  len += sprintf(code+len, "\nputint:\n"
-                              "push eax\n"
-                              "push ebx\n"
-                              "push ecx\n"
-                              "push edx\n"
-                              "mov eax,dword[esp+20]\n"
-                              "mov ecx,0\n"
-                              "push 0\n"
-                              "push 0x0A\n"
-                              "mov ebx,10\n"
-                              ".putint0:\n"
-                              "add ecx,1\n"
-                              "mov dx,0\n"
-                              "div bx\n"
-                              "add edx,0x30\n"
-                              "push edx\n"
-                              "cmp ax,0\n"
-                              "jz .putint1\n"
-                              "jmp .putint0\n"
-                              ".putint1:\n"
-                              "push dword esp\n"
-                              "call putstr\n"
-                              "add esp,4\n"
-                              "lea ecx,[8+4*ecx]\n"
-                              "add esp,ecx\n"
-                              "pop edx\n"
-                              "pop ecx\n"
-                              "pop ebx\n"
-                              "pop eax\n"
-                              "ret\n");
-  len += sprintf(code+len, "\nputstr:\n"
-                              "push eax\n"
-                              "mov esi,dword[esp+8]\n"
-                              ".putstr0:\n"
-                              "mov byte al,[esi]\n"
-                              "cmp al,0\n"
-                              "je .putstr1\n"
-                              "push eax\n"
-                              "call putchar\n"
-                              "add esp,4\n"
-                              "add esi,4\n"
-                              "jmp .putstr0\n"
-                              ".putstr1:\n"
-                              "pop eax\n"
-                              "ret\n");
-  len += sprintf(code+len, "\nputchar:\n"
-                              "push dword [esp+4]\n"
-                              "mov edx,esp\n"
-                              "push dword 1\n"
-                              "push dword edx\n"
-                              "push dword 1\n"
-                              "mov eax,4\n"
-                              "sub esp,4\n"
-                              "int 0x80\n"
-                              "add esp,20\n"
-                              "ret\n");
-  len += sprintf(code+len, "\nstart:\n"
-                              "mov ebp,esp\n"
-                              "sub esp,%d\n", symbol_table_get_size()*4);
+  if(strcmp(target, target_mac) == 0) {
+    len += sprintf(code+len, "%s", head_mac);
+  }
+  else if(strcmp(target, target_ubu) == 0) {
+    len += sprintf(code+len, "%s", head_ubu);
+  }
+
+  len += sprintf(code+len, "%s", putint);
+  len += sprintf(code+len, "%s", putstr);
+  
+  if(strcmp(target, target_mac) == 0) {
+    len += sprintf(code+len, "%s", putchar_mac);
+    len += sprintf(code+len, "\nstart:\n"
+                             "mov ebp,esp\n"
+                             "sub esp,%d\n", symbol_table_get_size()*4);
+  }
+  else if (strcmp(target, target_ubu) == 0) {
+    len += sprintf(code+len, "%s", putchar_ubu);
+    len += sprintf(code+len, "\n_start:\n"
+                             "mov ebp,esp\n"
+                             "sub esp,%d\n", symbol_table_get_size()*4);
+  }
+
+  
 }
 const char* CodeGenerator_x86::next_reg() {
   if(regs.eax == 0) {

@@ -8,7 +8,7 @@ all:
 mac-exe:
 	nasm -f macho output.asm
 	ld -macosx_version_min 10.7.0 -o output output.o
-ubuntu-exe:
+ubu-exe:
 	nasm -f elf output.asm -o output.o
 	ld -m elf_i386 -s -o output output.o
 
