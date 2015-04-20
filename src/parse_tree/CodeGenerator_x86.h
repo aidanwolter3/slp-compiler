@@ -5,6 +5,8 @@
 #include "stdlib.h"
 #include "string.h"
 
+#include "../symbol_table/symbol_table.h"
+
 #include "CompoundStatement.h"
 #include "AssignStatement.h"
 #include "PrintStatement.h"
@@ -23,6 +25,16 @@ class CodeGenerator_x86 : public Visitor {
   private:
     char *code;
     int len;
+    
+    struct {
+      unsigned int eax : 1;
+      unsigned int ebx : 1;
+      unsigned int ecx : 1;
+      unsigned int edx : 1;
+    } regs;
+
+    const char* next_reg();
+    void release_reg(char *reg);
 
     class CodeReturn {
       public:

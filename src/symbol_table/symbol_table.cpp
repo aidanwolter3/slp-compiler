@@ -39,12 +39,27 @@ int symbol_table_add(int token, char *lexem, int type) {
     struct symbol_s sym;
     sym.t = token;
     sym.type = 0; //initialize to 0 for now
+    sym.loc = (sym_table.size+1)*4; // set the offset on the stack
     sym.name = (char*)malloc(sizeof(lexem));
     strcpy(sym.name, lexem);
     sym_table.d[sym_table.size++] = sym;
   }
 
   return sym_found ? 0 : -1;
+}
+
+int symbol_table_get_symbol_loc(char *lexem) {
+  bool sym_found = false;
+  for(int i = 0; i < sym_table.size; i++) {
+    if(strcmp(sym_table.d[i].name, lexem) == 0) {
+      return sym_table.d[i].loc;
+    }
+  }
+  return -1;
+}
+
+int symbol_table_get_size() {
+  return sym_table.size;
 }
 
 struct symbol_s symbol_table_get_last() {

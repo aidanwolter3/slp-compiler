@@ -61,16 +61,23 @@ add esp,20
 ret
 
 start:
-mov ecx,9
-mov ecx,4
-add ecx,ecx
-mov ecx,ecx
-push ecx
+mov ebp,esp
+sub esp,8
+mov eax,9
+mov ebx,4
+add eax,ebx
+mov [ebp-4],eax
+mov ecx,3
+mov [ebp-8],ecx
+push dword [ebp-4]
 call putint
+push dword [ebp-8]
+call putint
+add esp,4
 
 ;exit
 push dword 0
 mov eax,1
 sub esp,12
 int 0x80
-add esp,4
+add esp,8

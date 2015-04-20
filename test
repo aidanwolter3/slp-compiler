@@ -1,2 +1,4 @@
 dude := 9 + 4;
+hi := 3;
 print(dude);
+print(hi);

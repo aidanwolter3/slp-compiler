@@ -1,8 +1,18 @@
 #include "CodeGenerator_x86.h"
 
 CodeGenerator_x86::CodeGenerator_x86() {
-  code = (char*)malloc(1000*sizeof(char));
+
+  //initialize the code
+  code = (char*)malloc(2000*sizeof(char));
   len = 0;
+
+  //set that no registers are in use
+  regs.eax = 0;
+  regs.ebx = 0;
+  regs.ecx = 0;
+  regs.edx = 0;
+
+  //add the necessary functions for printing an integer
   len += sprintf(code+len, "global start\n"
                             "section .text\n");
   len += sprintf(code+len, "\nputint:\n"
@@ -61,15 +71,60 @@ CodeGenerator_x86::CodeGenerator_x86() {
                               "int 0x80\n"
                               "add esp,20\n"
                               "ret\n");
-  len += sprintf(code+len, "\nstart:\n");
+  len += sprintf(code+len, "\nstart:\n"
+                              "mov ebp,esp\n"
+                              "sub esp,%d\n", symbol_table_get_size()*4);
+}
+const char* CodeGenerator_x86::next_reg() {
+  if(regs.eax == 0) {
+    const char *eax = "eax"+0;
+    regs.eax = 1;
+    return eax;
+  }
+  if(regs.ebx == 0) {
+    const char *ebx = "ebx"+0;
+    regs.ebx = 1;
+    return ebx;
+  }
+  if(regs.ecx == 0) {
+    const char *ecx = "ecx"+0;
+    regs.ecx = 1;
+    return ecx;
+  }
+  if(regs.edx == 0) {
+    const char *edx = "edx"+0;
+    regs.edx = 1;
+    return edx;
+  }
+  const char *noreg = ""+0;
+  return noreg;
+}
+void CodeGenerator_x86::release_reg(char *reg) {
+  const char *eax = "eax"+0;
+  const char *ebx = "ebx"+0;
+  const char *ecx = "ecx"+0;
+  const char *edx = "edx"+0;
+  if(strcmp(reg, eax) == 0) {
+    regs.eax = 0;
+  }
+  else if(strcmp(reg, ebx) == 0) {
+    regs.ebx = 0;
+  }
+  else if(strcmp(reg, ecx) == 0) {
+    regs.ecx = 0;
+  }
+  else if(strcmp(reg, edx) == 0) {
+    regs.edx = 0;
+  }
 }
 void CodeGenerator_x86::print_code() {
-  len += sprintf(code+len, "\n;exit\n"
-                              "push dword 0\n"
-                              "mov eax,1\n"
-                              "sub esp,12\n"
-                              "int 0x80\n"
-                              "add esp,4\n");
+  len += sprintf(code+len, "add esp,4\n"
+                           "\n;exit\n"
+                           "push dword 0\n"
+                           "mov eax,1\n"
+                           "sub esp,12\n"
+                           "int 0x80\n"
+                           "add esp,%d\n", symbol_table_get_size()*4);
 
   FILE *f = fopen("output.asm", "w");
   printf("%s", code);
@@ -85,31 +140,26 @@ void* CodeGenerator_x86::visit(AssignStatement *stm) {
   CodeReturn *c1 = (CodeReturn*)stm->id->accept(this);
   CodeReturn *c2 = (CodeReturn*)stm->exp->accept(this);
 
-  const char *reg = "ecx"+0;
-
-  len += sprintf(code+len, "mov %s,%s\n", reg, c2->tmp);
+  len += sprintf(code+len, "mov %s,%s\n", c1->tmp, c2->tmp);
 
   return new CodeReturn(0, 1);
 }
 void* CodeGenerator_x86::visit(PrintStatement *stm) {
   CodeReturn *c = (CodeReturn*)stm->list->accept(this);
 
-  const char *reg = "ecx"+0;
-
-  len += sprintf(code+len, "push %s\n", reg);
+  len += sprintf(code+len, "push dword %s\n", c->tmp);
   len += sprintf(code+len, "call putint\n");
 
   return new CodeReturn(0, 2);
 }
 void* CodeGenerator_x86::visit(IdExpression *exp) {
   CodeReturn *c = new CodeReturn(0, 3);
-  strcpy(c->tmp, exp->lexem);
+  int offset = symbol_table_get_symbol_loc(exp->lexem);
+  sprintf(c->tmp, "[ebp-%d]", offset);
   return c;
 }
 void* CodeGenerator_x86::visit(NumExpression *exp) {
-  //sprintf(c->code, "%d", exp->val);
-
-  const char *reg = "ecx"+0;
+  const char *reg = next_reg();
   len += sprintf(code+len, "mov %s,%d\n", reg, exp->val);
 
   CodeReturn *c = new CodeReturn(4, 4);

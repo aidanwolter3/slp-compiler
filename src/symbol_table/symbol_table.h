@@ -11,6 +11,7 @@ struct symbol_s {
   char *name;
   int t;
   int type;
+  int loc; //offset from stack
 };
 
 //symbol table
@@ -23,6 +24,9 @@ struct symbol_table_s {
 void symbol_table_init();
 void symbol_table_dump();
 int symbol_table_add(int token, char *lexem, int type);
+int symbol_table_get_symbol_loc(char *lexem);
+int symbol_table_get_size();
 struct symbol_s symbol_table_get_last();
+
 
 #endif
