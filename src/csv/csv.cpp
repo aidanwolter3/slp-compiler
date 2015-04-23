@@ -1,13 +1,12 @@
 // Aidan Wolter
-// Syntax Analyzer - Program Assignment #2
 // Program Translation - COSC 4503
-// 2/26/2015
 
-#include "parse_csv.h"
+#include "csv.h"
+
+char* xstrtok(char *line, char *delims);
 
 //parse a csv with a variable size
-char*** parse_csv(FILE *file, int *rows, int *cols) {
-  char ***table;
+CSV::CSV(FILE *file, int *rows, int *cols) {
   char *line = (char*)malloc(10000*sizeof(char*)); //bigger?
   *rows = 1;
   *cols = 1;
@@ -107,8 +106,14 @@ char*** parse_csv(FILE *file, int *rows, int *cols) {
       }
     }
   }
+}
 
-  return table;
+char* CSV::get(int row, int col) {
+  return table[row][col];
+}
+
+void CSV::set(int row, int col, char *cell) {
+  strcpy(table[row][col], cell);
 }
 
 //modified strtok that takes into account empty strings

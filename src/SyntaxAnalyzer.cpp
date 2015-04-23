@@ -1,58 +1,51 @@
 // Aidan Wolter
-// Syntax Analyzer - Program Assignment #2
 // Program Translation - COSC 4503
-// 2/26/2015
 
-#include "syntax_analyzer.h"
+#include "SyntaxAnalyzer.h"
 #include <stdlib.h>
 #include <string.h>
 
 //#define SYNDEBUG
 
 //get the global lex table
-extern struct lex_table_s lex_table;
 extern char *cur_line;
 extern int line_number;
 extern int line_index;
-
-//global parse table
-struct parse_table_s parse_table;
 
 //keep track of where the error is even when finishing off the line
 int last_line_index = 0;
 int last_line_number = 1;
 
-//construct the parse table from the csv
-void build_parse_table(FILE *pfile) {
-  parse_table.d = parse_csv(pfile, &parse_table.rows, &parse_table.cols);
+SyntaxAnalyzer::SyntaxAnalyzer(FILE *syn_file, LexicalAnalyzer *lexicalAnalyzer, SymbolTable *symbolTable, ParseTree *parseTree) {
+  parseTable = CSV(syn_file, &rows, &cols);
+  this.lexicalAnalyzer = lexicalAnalyzer;
+  this.symbolTable = symbolTable;
+  this.parseTree = parseTree;
 }
 
-//parse the parse table
-int syntax_analyzer_parse(FILE *infile, ParseTree p) {
+//parse the input and check for syntax errors
+int SyntaxAnalyzer::parse() {
   
-  //get the parse tree
-  ParseTree parseTree = p;
-
   bool error_found = false;
 
   //continue parsing until error or accept
-  struct token_s *t_stack[256]; //token stack
+  Token **t_stack[256]; //token stack
   int s_stack[256]; //state stack
   s_stack[0] = 0;   //start in state 0
   int t_stack_cnt = 0;
   int s_stack_cnt = 1;
-  struct token_s t = lex_next_token(infile);
-  struct token_s last_t = {};
+  Token *t = lexicalAnalyzer.nextToken();
+  Token *last_t = new Token(0, void*);
   char *stopstr;
 
-  if(t.t == 1) {
-    symbol_table_add(t.t, t.l, 0); //type = 0 for now
+  if(t->t == 1) {
+    symbolTable.add(t->t, t->l, 0); //type = 0 for now
   }
 
   while(true) {
 
     //error in lexer, so continue
-    if(t.t == -1) {
+    if(t->t == -1) {
       error_found = true;
 
       //save where the error was found
@@ -64,26 +57,26 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
       t_stack_cnt = 0;
 
       //get the next token
-      memcpy(&last_t, &t, sizeof(t));
-      t = lex_next_token(infile);
-      if(t.t == 1) {
-        symbol_table_add(t.t, t.l, 0); //type = 0 for now
+      memcpy(last_t, t, sizeof(&t));
+      t = lexicalAnalyzer.nextToken();
+      if(t->t == 1) {
+        symbolTable.add(t->t, t->l, 0); //type = 0 for now
       }
     }
 
     //newline
-    else if(t.t == -2) {
+    else if(t->t == -2) {
 
       //get another token
       last_line_index = line_index;
-      memcpy(&last_t, &t, sizeof(t));
-      t = lex_next_token(infile);
-      if(t.t == 1) {
-        symbol_table_add(t.t, t.l, 0); //type = 0 for now
+      memcpy(last_t, t, sizeof(&t));
+      t = lexicalAnalyzer.nextToken();
+      if(t->t == 1) {
+        symbolTable.add(t->t, t->l, 0); //type = 0 for now
       }
     }
 
-    else if(t.t == -3 && error_found) {
+    else if(t->t == -3 && error_found) {
       break;
     }
 
@@ -93,8 +86,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
       //get the command from the table
       //state+2 because we do not use the headers of the table
       int state = s_stack[s_stack_cnt-1];
-      int token_index = parse_table_col_from_token(t);
-      char *cmd = parse_table.d[state+2][token_index];
+      int token_index = col_from_token(t);
+      char *cmd = parseTable.get(state+2, token_index);
 
       //cell is empty, so report expecting something else
       if(strlen(cmd) == 0) {
@@ -103,20 +96,20 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //jump to next line by copying the error condition
         struct token_s error_t;
         int error_state = state;
-        error_t.t = t.t;
-        strcpy(error_t.l, t.l);
+        error_t->t = t->t;
+        strcpy(error_t->l, t->l);
         last_line_number = line_number;
 
         //continue grabbing tokens until or \n or eof
-        memcpy(&last_t, &t, sizeof(t));
-        t = lex_next_token(infile);
-        while(t.t != -2 && t.t != -3) {
-          memcpy(&last_t, &t, sizeof(t));
-          t = lex_next_token(infile);
+        memcpy(last_t, t, sizeof(&t));
+        t = lexicalAnalyzer.nextToken();
+        while(t->t != -2 && t->t != -3) {
+          memcpy(last_t, t, sizeof(t));
+          t = lexicalAnalyzer.nextToken()
         }
 
         //throw syntax error as long as no lex error
-        if(t.t != -1) {
+        if(t->t != -1) {
           throw_unexpected_token(error_t, error_state);
         }
 
@@ -126,10 +119,10 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         t_stack_cnt = 0;
 
         //get another token
-        memcpy(&last_t, &t, sizeof(t));
-        t = lex_next_token(infile);
-        if(t.t == 1) {
-          symbol_table_add(t.t, t.l, 0); //type = 0 for now
+        memcpy(last_t, t, sizeof(&t));
+        t = lexicalAnalyzer.nextToken()
+        if(t->t == 1) {
+          symbolTable.add(t->t, t->l, 0); //type = 0 for now
         }
         continue;
       }
@@ -144,15 +137,15 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         char *stopstr;
         int prod = strtod(&cmd[1], &stopstr);
         int pop_size; //how much to pop off the stacks
-        struct token_s rep_token;//what to push onto the token stack
+        Token *rep_token;//what to push onto the token stack
 
         //check each production
 
         //S;S
         if(prod == 1) {
           pop_size = 3;
-          rep_token.t = 13;
-          rep_token.l[0] = 'S';
+          rep_token->t = 13;
+          rep_token->l[0] = 'S';
 
           Statement *stm2 = (Statement*)parseTree.pop();
           Statement *stm1 = (Statement*)parseTree.pop();
@@ -163,8 +156,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //id:=E
         else if(prod == 2) {
           pop_size = 3;
-          rep_token.t = 13;
-          rep_token.l[0] = 'S';
+          rep_token->t = 13;
+          rep_token->l[0] = 'S';
 
           char *lexem = (char*)malloc(sizeof(t_stack[t_stack_cnt-3]));
           strcpy(lexem, t_stack[t_stack_cnt-3]->l);
@@ -177,8 +170,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //print(L)
         else if(prod == 3) {
           pop_size = 4;
-          rep_token.t = 13;
-          rep_token.l[0] = 'S';
+          rep_token->t = 13;
+          rep_token->l[0] = 'S';
 
           ExpressionList *explist = (ExpressionList*)parseTree.pop();
           PrintStatement *print = new PrintStatement(explist);
@@ -188,17 +181,17 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //epsilon
         else if(prod == 4) {
           pop_size = 0;
-          rep_token.t = 13;
-          rep_token.l[0] = 'S';
+          rep_token->t = 13;
+          rep_token->l[0] = 'S';
         }
 
         //id
         else if(prod == 5) {
           pop_size = 1;
-          rep_token.t = 14;
-          rep_token.l[0] = 'E';
+          rep_token->t = 14;
+          rep_token->l[0] = 'E';
 
-          char *lexem = (char*)malloc(sizeof(t_stack[t_stack_cnt-1]));
+          char *lexem = (char*)malloc(sizeof(&t_stack[t_stack_cnt-1]));
           strcpy(lexem, t_stack[t_stack_cnt-1]->l);
           IdExpression *id = new IdExpression(lexem);
           parseTree.push(id);
@@ -207,8 +200,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //num
         else if(prod == 6) {
           pop_size = 1;
-          rep_token.t = 14;
-          rep_token.l[0] = 'E';
+          rep_token->t = 14;
+          rep_token->l[0] = 'E';
 
           int val = strtod((const char*)&t_stack[t_stack_cnt-1]->l, &stopstr);
           NumExpression *num = new NumExpression(val);
@@ -218,8 +211,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //EBE
         else if(prod == 7) {
           pop_size = 3;
-          rep_token.t = 14;
-          rep_token.l[0] = 'E';
+          rep_token->t = 14;
+          rep_token->l[0] = 'E';
 
           Expression *exp2 = (Expression*)parseTree.pop();
           BinaryOperation *op = (BinaryOperation*)parseTree.pop();
@@ -231,8 +224,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //(S,E)
         else if(prod == 8) {
           pop_size = 5;
-          rep_token.t = 14;
-          rep_token.l[0] = 'E';
+          rep_token->t = 14;
+          rep_token->l[0] = 'E';
 
           Expression *exp = (Expression*)parseTree.pop();
           Statement *stm = (Statement*)parseTree.pop();
@@ -243,8 +236,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //E,L
         else if(prod == 9) {
           pop_size = 3;
-          rep_token.t = 15;
-          rep_token.l[0] = 'L';
+          rep_token->t = 15;
+          rep_token->l[0] = 'L';
 
           ExpressionList *list = (ExpressionList*)parseTree.pop();
           Expression *exp = (Expression*)parseTree.pop();
@@ -255,15 +248,15 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //E
         else if(prod == 10) {
           pop_size = 1;
-          rep_token.t = 15;
-          rep_token.l[0] = 'L';
+          rep_token->t = 15;
+          rep_token->l[0] = 'L';
         }
 
         //+
         else if(prod == 11) {
           pop_size = 1;
-          rep_token.t = 16;
-          rep_token.l[0] = 'B';
+          rep_token->t = 16;
+          rep_token->l[0] = 'B';
 
           Plus *plus = new Plus();
           parseTree.push(plus);
@@ -272,8 +265,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //-
         else if(prod == 12) {
           pop_size = 1;
-          rep_token.t = 16;
-          rep_token.l[0] = 'B';
+          rep_token->t = 16;
+          rep_token->l[0] = 'B';
 
           Minus *minus = new Minus();
           parseTree.push(minus);
@@ -282,8 +275,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         //*
         else if(prod == 13) {
           pop_size = 1;
-          rep_token.t = 16;
-          rep_token.l[0] = 'B';
+          rep_token->t = 16;
+          rep_token->l[0] = 'B';
 
           Multiply *multiply = new Multiply();
           parseTree.push(multiply);
@@ -292,8 +285,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
         // /
         else if(prod == 14) {
           pop_size = 1;
-          rep_token.t = 16;
-          rep_token.l[0] = 'B';
+          rep_token->t = 16;
+          rep_token->l[0] = 'B';
 
           Divide *divide = new Divide();
           parseTree.push(divide);
@@ -305,8 +298,8 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
 
         //push the replacement token
         struct token_s *tmp = (struct token_s*)malloc(sizeof(struct token_s));
-        tmp->t = rep_token.t;
-        strcpy(tmp->l, rep_token.l);
+        tmp->t = rep_token->t;
+        strcpy(tmp->l, rep_token->l);
         t_stack[t_stack_cnt++] = tmp;
 
         //push the new state from the goto
@@ -319,20 +312,20 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
       //shift
       else if(cmd[0] == 's') {
         int newstate = strtod(&cmd[1], &stopstr);
-        struct token_s *tmp = (struct token_s*)malloc(sizeof(struct token_s));
-        tmp->t = t.t;
-        strcpy(tmp->l, t.l);
+        Token *tmp = (Token*)malloc(sizeof(Token*));
+        tmp->t = t->t;
+        strcpy(tmp->l, t->l);
         t_stack[t_stack_cnt++] = tmp;
         s_stack[s_stack_cnt++] = newstate;
 
         //get another token
         last_line_index = line_index;
-        memcpy(&last_t, &t, sizeof(t));
-        t = lex_next_token(infile);
+        memcpy(last_t, t, sizeof(&t));
+        t = lexicalAnalyzer.nextToken();
 
         //if an id
-        if(t.t == 1) {
-          symbol_table_add(t.t, t.l, 0); //type = 0 for now
+        if(t->t == 1) {
+          symbolTable.add(t->t, t->l, 0); //type = 0 for now
         }
       }
 
@@ -369,10 +362,10 @@ int syntax_analyzer_parse(FILE *infile, ParseTree p) {
 }
 
 //search for the token in the parse table and return the col index
-int parse_table_col_from_token(struct token_s t) {
-  for(int i = 0; i < parse_table.cols; i++) {
-    int tmp_token = strtod(parse_table.d[1][i], NULL);
-    if(tmp_token == t.t) {
+ParseTable::colFromToken(Token *t) {
+  for(int i = 0; i < cols; i++) {
+    int tmp_token = strtod(parseTable.get(1, i), NULL);
+    if(tmp_token == t->t) {
       return i;
     }
   }
@@ -380,14 +373,14 @@ int parse_table_col_from_token(struct token_s t) {
 }
 
 //print an error message indicated where the unrecognized token is
-void throw_unexpected_token(struct token_s t, int state) {
+void throw_unexpected_token(Token *t, int state) {
 
   //get valid options
   char *options[256];
   int options_len = 0;
-  for(int i = 0; i < parse_table.cols; i++) {
-    if(strlen(parse_table.d[state+2][i]) > 0) {
-      options[options_len++] = parse_table.d[0][i];
+  for(int i = 0; i < cols; i++) {
+    if(strlen(parseTable.get(state+2, i)) > 0) {
+      options[options_len++] = parseTable.get(0, i);
     }
   }
 
@@ -409,7 +402,7 @@ void throw_unexpected_token(struct token_s t, int state) {
   options_str[options_str_len++] = '}';
   options_str[options_str_len] = '\0';
 
-  printf("Error: Syntax analyzer found '%s' on line %d while expecting one of the set %s\n", t.l, last_line_number, options_str);
+  printf("Error: Syntax analyzer found '%s' on line %d while expecting one of the set %s\n", t->l, last_line_number, options_str);
   printf("\t%s\n", cur_line);
   printf("\t");
   for(int i = 0; i < last_line_index; i++) {

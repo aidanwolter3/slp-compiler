@@ -71,14 +71,16 @@ ret
 
 start:
 mov ebp,esp
-sub esp,12
+sub esp,20
 mov eax,5
 mov ebx,3
-add eax,ebx
-mov [ebp-4],eax
+mov ecx,eax
+add ecx,ebx
+mov [ebp-4],ecx
 mov eax,1
-sub [ebp-4],eax
-push dword [ebp-4]
+mov ebx,[ebp-4]
+sub ebx,eax
+push dword ebx
 call putint
 mov eax,10
 push eax
@@ -89,19 +91,28 @@ push eax
 add esp,4
 pop edx
 pop eax
-mov eax,[esp-12]
-mov [ebp-8],eax
+mov ebx,[esp-12]
+mov [ebp-8],ebx
 push dword [ebp-8]
 call putint
-mov eax,9000
-mov ebx,90
-sub eax,ebx
-mov ebx,89
-add eax,ebx
+mov eax,1
+mov [ebp-4],eax
+mov eax,2
+mov [ebp-8],eax
+mov eax,3
 mov [ebp-12],eax
-push dword [ebp-12]
+mov eax,4
+mov [ebp-16],eax
+mov eax,[ebp-4]
+add eax,[ebp-8]
+mov ebx,eax
+add ebx,[ebp-12]
+mov eax,ebx
+add eax,[ebp-16]
+mov [ebp-20],eax
+push dword [ebp-20]
 call putint
-add esp,12
+add esp,20
 
 ;exit
 push dword 0
