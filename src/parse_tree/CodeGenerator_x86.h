@@ -5,7 +5,7 @@
 #include "stdlib.h"
 #include "string.h"
 
-#include "../symbol_table/symbol_table.h"
+#include "../symbol_table/SymbolTable.h"
 
 #include "CompoundStatement.h"
 #include "AssignStatement.h"
@@ -34,7 +34,9 @@ class CodeGenerator_x86 : public Visitor {
     } regs;
 
     const char* next_reg();
-    void release_reg(char *reg);
+    void release_reg(const char *reg);
+
+    SymbolTable *symbolTable;
 
     class CodeReturn {
       public:
@@ -46,7 +48,7 @@ class CodeGenerator_x86 : public Visitor {
         };
     };
   public:
-    CodeGenerator_x86(const char *target);
+    CodeGenerator_x86(const char *target, SymbolTable *symbolTable);
     void print_code();
     void* visit(CompoundStatement *s);
     void* visit(AssignStatement *stm);

@@ -10,25 +10,26 @@
 
 #include "csv/csv.h"
 
-class LexTable {
+class Token {
   public:
-    class Token {
-      public:
-        int t;
-        char l[256];
-        Token(int token, char lexem);
-    };
-    LexTable(FILE *lex_file, FILE *infile);
-    Token* nextToken();
-  private:
+    int t;
+    char l[256];
+    Token(int token, char *lexem) {t = token; strcpy(l, lexem);}
+};
 
-    CSV *table;
+class LexicalAnalyzer {
+  private:
+    CSV *lex_table;
+    int table[256][256];
     FILE *infile;
     char *matches[256];
     int rows;
     int cols;
 
     void throwUnknownToken(char *line, int lin_index, int line_number, Token *t);
+  public:
+    LexicalAnalyzer(FILE *lex_file, FILE *infile);
+    Token* nextToken();
 };
 
 #endif

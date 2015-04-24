@@ -1,6 +1,5 @@
 // Aidan Wolter
 // Program Translation - COSC 4503
-// 2/26/2015
 // 
 // Description:
 
@@ -21,12 +20,12 @@
 int main(int argc, char *argv[]) {
 
   //initialize the symbol table and parse tree
-  SymbolTable symbolTable = new SymbolTable();
-  ParseTree parseTree = new ParseTree();
+  SymbolTable *symbolTable = new SymbolTable();
+  ParseTree *parseTree = new ParseTree();
 
   //get the lexical analyzer input file
   FILE *lex_file = fopen("lex_table.csv", "r");
-  if(sfile == NULL) {
+  if(lex_file == NULL) {
     printf("Could not find lex syntax file!\n");
     printf("The file should be placed in the same directory and named 'lex_table.csv'\n");
     return 0;
@@ -40,14 +39,14 @@ int main(int argc, char *argv[]) {
   }
   FILE *infile = fopen(argv[1], "r");
   if(infile == NULL) {
-    printf("Could not find the input file: %s\n", argv[2]);
+    printf("Could not find the input file: %s\n", argv[1]);
     printf("Please ensure that it exists\n");
     return 0;
   }
 
   //get the syntax analyzer input file
   FILE *syn_file = fopen("parse_table.csv", "r");
-  if(pfile == NULL) {
+  if(syn_file == NULL) {
     printf("Could not find the parse table file!\n");
     printf("The file should be placed in the same directory and named 'parse_table.csv'\n");
     return 0;
@@ -55,20 +54,20 @@ int main(int argc, char *argv[]) {
 
   //create the lexical analyzer and syntax analyzer
   LexicalAnalyzer *lexicalAnalyzer = new LexicalAnalyzer(lex_file, infile);
-  SyntaxAnalyzer *syntaxAnalyzer = new SyntaxAnalyzer(syn_file, &lexicalAnalyzer, symbolTable, parseTree);
+  SyntaxAnalyzer *syntaxAnalyzer = new SyntaxAnalyzer(syn_file, lexicalAnalyzer, symbolTable, parseTree);
 
   //close the opened files
   fclose(lex_file);
   fclose(syn_file);
 
   //complete the parsing
-  int ret = syntaxAnalyzer.parse();
+  int ret = syntaxAnalyzer->parse();
   if(ret == 0) {
     printf("The file has proper syntax\n");
 
     printf("\nPrettyPrintVisitor results:\n");
-    PrettyPrintVisitor v = PrettyPrintVisitor();
-    parseTree.get_root()->accept(&v);
+    PrettyPrintVisitor *v = new PrettyPrintVisitor();
+    parseTree->get_root()->accept(v);
 
     //printf("\n\nVariableEvaluatorVisitor results:\n");
     //VariableEvaluatorVisitor v2 = VariableEvaluatorVisitor();
@@ -76,18 +75,20 @@ int main(int argc, char *argv[]) {
     //v2.printVariables();
 
     printf("\n\nStarting target code generation...\n");
-    const char *target_mac = "mac"+0;
+    const char *target_mac = "mac";
     if(argc >= 3) {
-      CodeGenerator_x86 *c = new CodeGenerator_x86(argv[2]);
-      parseTree.get_root()->accept(c);
+      CodeGenerator_x86 *c = new CodeGenerator_x86(argv[2], symbolTable);
+      parseTree->get_root()->accept(c);
       c->print_code();
     }
     else { //default to mac
-      CodeGenerator_x86 *c = new CodeGenerator_x86(target_mac);
-      parseTree.get_root()->accept(c);
+      CodeGenerator_x86 *c = new CodeGenerator_x86(target_mac, symbolTable);
+      parseTree->get_root()->accept(c);
       c->print_code();
     }
   }
+
+  fclose(infile);
 
   //symbol_table_dump();
   return 0;

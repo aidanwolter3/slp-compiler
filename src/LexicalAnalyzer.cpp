@@ -14,8 +14,8 @@ int line_number = 1;
 int line_index = 0;
 
 //build the lex_table table from a file
-LexTable::LexTable(FILE *lex_file, FILE *infile) {
-  table = new CSV(lex_file, &rows, &cols);
+LexicalAnalyzer::LexicalAnalyzer(FILE *lex_file, FILE *infile) {
+  lex_table = new CSV(lex_file, &rows, &cols);
   this->infile = infile;
 
   //subtract the top row
@@ -24,24 +24,23 @@ LexTable::LexTable(FILE *lex_file, FILE *infile) {
   //copy the matches header
   for(int i = 0; i < cols; i++) {
     matches[i] = (char*)malloc(256*sizeof(char*));
-    strcpy(matches[i], table->get(0, i));
+    strcpy(matches[i], lex_table->get(0, i));
   }
 
   //copy the rest and cast as integers
   for(int i = 0; i < rows; i++) {
     for(int j = 0; j < cols; j++) {
-      table->set(i, j, strtod(table->get(i+1, j), NULL));
+      table[i][j] = strtod(lex_table->get(i+1, j), NULL);
     }
   }
 }
 
 //return the next valid token from the given file
-Token* LexTable::nextToken() {
+Token* LexicalAnalyzer::nextToken() {
 
   //the current token we are discovering
-  Token *t = new Token();
-  t->t = -1;
-  memset(t->l, 0, sizeof(t->l));
+  char *nullstr = (char*)malloc(1*sizeof(char*));
+  Token *t = new Token(-1, nullstr);
   int lexem_size = 0;
 
   //the last read character, initialize to a new read
@@ -107,7 +106,7 @@ Token* LexTable::nextToken() {
         //compare matches[c][n] to input[i]
         //also treat newlines and eofs as spaces
         if((*m == ' ' && (c == '\n' || c == EOF)) || *m == c) {
-          newstage = table.get(stage, col);
+          newstage = table[stage][col];
           //printf("match found in stage: %d, newstage: %d\n", stage, newstage);
           match_found = true;
           break;
@@ -141,7 +140,7 @@ Token* LexTable::nextToken() {
     else if(newstage == 0) {
       line_index += lexem_size;
 
-      t->t = table.get(stage, cols-1);
+      t->t = table[stage][cols-1];
 
       #ifdef LEXDEBUG
       printf("t: %d %s\n", t->t, t->l);
@@ -191,7 +190,7 @@ Token* LexTable::nextToken() {
 }
 
 //print an error message indicated where the unrecognized token is
-LexTable::throwUnknownToken(char *line, int line_index, int line_number, Token *t) {
+void LexicalAnalyzer::throwUnknownToken(char *line, int line_index, int line_number, Token *t) {
   printf("Error: Lexer found unrecognized token '%s' on line %d\n", t->l, line_number);
   printf("\t%s\n", line);
   printf("\t");

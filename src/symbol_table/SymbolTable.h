@@ -4,24 +4,23 @@
 #ifndef SYMBOL_TABLE
 #define SYMBOL_TABLE
 
+class Symbol {
+  public:
+    char *name;
+    int t;
+    int type;
+    int loc;
+};
+
 class SymbolTable {
-  private:
-
-    class Symbol {
-      public:
-        char *name;
-        int t;
-        int type;
-        int loc;
-    };
-
   public:
     Symbol *symbols[100];
     int size;
 
     SymbolTable();
-    dump();
+    void dump();
     int add(int token, char *lexem, int type);
+    Symbol* get(char *lexem);
 };
 
 #endif
