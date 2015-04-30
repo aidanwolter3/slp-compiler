@@ -12,8 +12,8 @@
 #include "src/SyntaxAnalyzer.h"
 
 #include "src/parse_tree/ParseTree.h"
-#include "src/parse_tree/PrettyPrintVisitor.cpp"
 #include "src/parse_tree/VariableEvaluatorVisitor.h"
+#include "src/parse_tree/PrettyPrintVisitor.h"
 #include "src/parse_tree/CodeGenerator_x86.h"
 
 //main method
