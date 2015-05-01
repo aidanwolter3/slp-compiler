@@ -7,20 +7,15 @@
 
 //#define SYNDEBUG
 
-//get the global lex table
-extern char *cur_line;
-extern int line_number;
-extern int line_index;
-
-//keep track of where the error is even when finishing off the line
-int last_line_index = 0;
-int last_line_number = 1;
-
 SyntaxAnalyzer::SyntaxAnalyzer(FILE *syn_file, LexicalAnalyzer *lexicalAnalyzer, SymbolTable *symbolTable, ParseTree *parseTree) {
   parseTable = new CSV(syn_file, &rows, &cols);
   this->lexicalAnalyzer = lexicalAnalyzer;
   this->symbolTable = symbolTable;
   this->parseTree = parseTree;
+
+  //keep track of where the error is even when finishing off the line
+  last_line_index = 0;
+  last_line_number = 1;
 }
 
 //parse the input and check for syntax errors
@@ -50,7 +45,7 @@ int SyntaxAnalyzer::parse() {
       error_found = true;
 
       //save where the error was found
-      last_line_index = line_index;
+      last_line_index = lexicalAnalyzer->getLineIndex();
 
       //reset the stacks
       s_stack[0] = 0;   //start in state 0
@@ -69,7 +64,7 @@ int SyntaxAnalyzer::parse() {
     else if(t->t == -2) {
 
       //get another token
-      last_line_index = line_index;
+      last_line_index = lexicalAnalyzer->getLineIndex();
       memcpy(last_t, t, sizeof(&t));
       t = lexicalAnalyzer->nextToken();
       if(t->t == 1) {
@@ -93,12 +88,12 @@ int SyntaxAnalyzer::parse() {
       //cell is empty, so report expecting something else
       if(strlen(cmd) == 0) {
         error_found = true;
-        
+
         //jump to next line by copying the error condition
         Token *error_t = new Token(t->t, (char*)malloc(sizeof(t->l)));
         int error_state = state;
         strcpy(error_t->l, t->l);
-        last_line_number = line_number;
+        last_line_number = lexicalAnalyzer->getLineNumber();
 
         //continue grabbing tokens until or \n or eof
         memcpy(last_t, t, sizeof(&t));
@@ -110,7 +105,7 @@ int SyntaxAnalyzer::parse() {
 
         //throw syntax error as long as no lex error
         if(t->t != -1) {
-          throw_unexpected_token(error_t, error_state);
+          throw_unexpected_token(error_t, error_state, lexicalAnalyzer->getCurLine());
         }
 
         //reset the stacks
@@ -320,7 +315,7 @@ int SyntaxAnalyzer::parse() {
         s_stack[s_stack_cnt++] = newstate;
 
         //get another token
-        last_line_index = line_index;
+        last_line_index = lexicalAnalyzer->getLineIndex();
         memcpy(last_t, t, sizeof(&t));
         t = lexicalAnalyzer->nextToken();
 
@@ -374,7 +369,7 @@ int SyntaxAnalyzer::colFromToken(Token *t) {
 }
 
 //print an error message indicated where the unrecognized token is
-void SyntaxAnalyzer::throw_unexpected_token(Token *t, int state) {
+void SyntaxAnalyzer::throw_unexpected_token(Token *t, int state, char *cur_line) {
 
   //get valid options
   char *options[256];

@@ -5,16 +5,15 @@
 
 //#define LEXDEBUG
 
-//keep track of the entire line
-char *cur_line = (char*)malloc(1024*sizeof(char*));
-int cur_line_cnt = 0;
-
-//keep track of the line number
-int line_number = 1;
-int line_index = 0;
-
 //build the lex_table table from a file
 LexicalAnalyzer::LexicalAnalyzer(FILE *lex_file, FILE *infile) {
+
+  //setup the current line
+  cur_line = (char*)malloc(1024*sizeof(char*));
+  cur_line_cnt = 0;
+  line_index = 0;
+  line_number = 1;
+
   lex_table = new CSV(lex_file, &rows, &cols);
   this->infile = infile;
 
@@ -198,4 +197,14 @@ void LexicalAnalyzer::throwUnknownToken(char *line, int line_index, int line_num
     printf(" ");
   }
   printf("^\n");
+}
+
+char* LexicalAnalyzer::getCurLine() {
+  return cur_line;
+}
+int LexicalAnalyzer::getLineIndex() {
+  return line_index;
+}
+int LexicalAnalyzer::getLineNumber() {
+  return line_number;
 }

@@ -15,9 +15,14 @@ class SyntaxAnalyzer {
     LexicalAnalyzer *lexicalAnalyzer;
     SymbolTable *symbolTable;
     ParseTree *parseTree;
+
     CSV *parseTable;
+
     int colFromToken(Token *t);
-    void throw_unexpected_token(Token *t, int state);
+    void throw_unexpected_token(Token *t, int state, char *cur_line);
+
+    int last_line_index;
+    int last_line_number;
   public:
     int rows;
     int cols;
