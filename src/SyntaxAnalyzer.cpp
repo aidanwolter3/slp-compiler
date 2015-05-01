@@ -30,8 +30,7 @@ int SyntaxAnalyzer::parse() {
   int t_stack_cnt = 0;
   int s_stack_cnt = 1;
   Token *t = lexicalAnalyzer->nextToken();
-  char *nullstr = (char*)malloc(1*sizeof(char*));
-  Token *last_t = new Token(-1, nullstr);
+  Token *last_t = new Token();
   char *stopstr;
 
   if(t->t == 1) {
@@ -90,7 +89,7 @@ int SyntaxAnalyzer::parse() {
         error_found = true;
 
         //jump to next line by copying the error condition
-        Token *error_t = new Token(t->t, (char*)malloc(sizeof(t->l)));
+        Token *error_t = t->duplicate();
         int error_state = state;
         strcpy(error_t->l, t->l);
         last_line_number = lexicalAnalyzer->getLineNumber();
@@ -132,8 +131,7 @@ int SyntaxAnalyzer::parse() {
         char *stopstr;
         int prod = strtod(&cmd[1], &stopstr);
         int pop_size = 0; //how much to pop off the stacks
-        char *nullstr = (char*)malloc(1*sizeof(char));
-        Token *rep_token = new Token(-1, nullstr);//what to push onto the token stack
+        Token *rep_token = new Token();//what to push onto the token stack
 
         //check each production
 
@@ -293,9 +291,7 @@ int SyntaxAnalyzer::parse() {
         t_stack_cnt -= pop_size;
 
         //push the replacement token
-        char *tmp_str = (char*)malloc(sizeof(rep_token->t));
-        Token *tmp = new Token(rep_token->t, tmp_str);
-        strcpy(tmp->l, rep_token->l);
+        Token *tmp = rep_token->duplicate();
         t_stack[t_stack_cnt++] = tmp;
 
         //push the new state from the goto
@@ -308,7 +304,7 @@ int SyntaxAnalyzer::parse() {
       //shift
       else if(cmd[0] == 's') {
         int newstate = strtod(&cmd[1], &stopstr);
-        Token *tmp = (Token*)malloc(sizeof(Token*));
+        Token *tmp = new Token();
         tmp->t = t->t;
         strcpy(tmp->l, t->l);
         t_stack[t_stack_cnt++] = tmp;

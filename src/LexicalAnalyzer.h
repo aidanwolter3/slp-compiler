@@ -14,7 +14,14 @@ class Token {
   public:
     int t;
     char l[256];
-    Token(int token, char *lexem) {t = token; strcpy(l, lexem);}
+    Token(int token, char *lexem) {
+      t = token;
+      strcpy(l, lexem);
+    }
+    Token() {
+      t = -1;
+    }
+    Token* duplicate();
 };
 
 class LexicalAnalyzer {

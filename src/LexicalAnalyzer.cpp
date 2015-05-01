@@ -5,6 +5,11 @@
 
 //#define LEXDEBUG
 
+//allocate and duplicate a token
+Token* Token::duplicate() {
+  return new Token(t, l);
+}
+
 //build the lex_table table from a file
 LexicalAnalyzer::LexicalAnalyzer(FILE *lex_file, FILE *infile) {
 
@@ -38,8 +43,7 @@ LexicalAnalyzer::LexicalAnalyzer(FILE *lex_file, FILE *infile) {
 Token* LexicalAnalyzer::nextToken() {
 
   //the current token we are discovering
-  char *nullstr = (char*)malloc(1*sizeof(char*));
-  Token *t = new Token(-1, nullstr);
+  Token *t = new Token();
   int lexem_size = 0;
 
   //the last read character, initialize to a new read
