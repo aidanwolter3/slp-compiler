@@ -6,12 +6,25 @@ The compiler translates a Straight Line Program (SLP) into x86 assembly for eith
 # build
 Make was used to simplify the build process. The compiler will generate an x86 assembly file that can then be assembled using Nasm. The ```makefile``` includes targets for assembling to either Mac or Ubuntu.
 
+***Compiler the compiler***
 ```bash
 $ make
+```
+
+***Run the compiler on an input file***
+```bash
 $ ./compiler filename mac
 # or ./compiler filename ubu
+```
+
+***Assemble the output file***
+```bash
 $ make mac-exe
 # or make ubu-exe
+```
+
+***Run the complete SLP***
+```bash
 $ ./output
 ```
 
