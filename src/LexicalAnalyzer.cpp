@@ -72,7 +72,7 @@ Token* LexicalAnalyzer::nextToken() {
     c = 0;
 
     #ifdef LEXDEBUG
-    printf("t: %d %s\n", t->t, t->l);
+    printf("received token: %d %s\n", t->t, t->l);
     #endif
 
     return t;
@@ -88,7 +88,7 @@ Token* LexicalAnalyzer::nextToken() {
     c = 0;
 
     #ifdef LEXDEBUG
-    printf("t: %d %s\n", t->t, t->l);
+    printf("received token: %d %s\n", t->t, t->l);
     #endif
 
     return t; //return eof token
@@ -146,7 +146,7 @@ Token* LexicalAnalyzer::nextToken() {
       t->t = table[stage][cols-1];
 
       #ifdef LEXDEBUG
-      printf("t: %d %s\n", t->t, t->l);
+      printf("received token: %d %s\n", t->t, t->l);
       #endif
 
       return t;
@@ -186,7 +186,7 @@ Token* LexicalAnalyzer::nextToken() {
   throwUnknownToken(cur_line, line_index, line_number, t);
 
   #ifdef LEXDEBUG
-  printf("t: %d %s\n", t->t, t->l);
+  printf("received token: %d %s\n", t->t, t->l);
   #endif
 
   return t;

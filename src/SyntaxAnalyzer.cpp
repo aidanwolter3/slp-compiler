@@ -20,7 +20,6 @@ SyntaxAnalyzer::SyntaxAnalyzer(FILE *syn_file, LexicalAnalyzer *lexicalAnalyzer,
 
 //parse the input and check for syntax errors
 int SyntaxAnalyzer::parse() {
-  
   bool error_found = false;
 
   //continue parsing until error or accept
@@ -85,7 +84,7 @@ int SyntaxAnalyzer::parse() {
       char *cmd = parseTable->get(state+2, token_index);
 
       //cell is empty, so report expecting something else
-      if(strlen(cmd) == 0) {
+      if(cmd == NULL || strlen(cmd) == 0) {
         error_found = true;
 
         //jump to next line by copying the error condition

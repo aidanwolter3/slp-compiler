@@ -104,6 +104,7 @@ CSV::CSV(FILE *file, int *rows, int *cols) {
         //copy the discovered cell into the table
         strcpy(table[i][j], cell);
       }
+
     }
   }
 }

@@ -1,3 +1,6 @@
+compiler
+output
+*.asm
 *.zip
 *.DS_Store
 *.o
