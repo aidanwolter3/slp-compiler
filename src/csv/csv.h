@@ -8,6 +8,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define CSV_DEFAULT_NUM_ROWS 100
+#define CSV_DEFAULT_NUM_COLS 100
+
 class CSV {
   private:
     char ***table;
