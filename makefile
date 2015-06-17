@@ -20,4 +20,5 @@ atest:
 clean:
 	(cd src; make clean)
 	rm *.o
+	rm *.asm
 	rm compiler

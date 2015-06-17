@@ -65,9 +65,9 @@ int main(int argc, char *argv[]) {
   if(ret == 0) {
     printf("The file has proper syntax\n");
 
-    printf("\nPrettyPrintVisitor results:\n");
-    PrettyPrintVisitor *v = new PrettyPrintVisitor();
-    parseTree->get_root()->accept(v);
+    //printf("\nPrettyPrintVisitor results:\n");
+    //PrettyPrintVisitor *v = new PrettyPrintVisitor();
+    //parseTree->get_root()->accept(v);
 
     //printf("\n\nVariableEvaluatorVisitor results:\n");
     //VariableEvaluatorVisitor v2 = VariableEvaluatorVisitor();
@@ -79,12 +79,14 @@ int main(int argc, char *argv[]) {
     if(argc >= 3) {
       CodeGenerator_x86 *c = new CodeGenerator_x86(argv[2], symbolTable);
       parseTree->get_root()->accept(c);
-      //c->print_code();
+      c->write_exit();
+      c->write_code();
     }
     else { //default to mac
       CodeGenerator_x86 *c = new CodeGenerator_x86(target_mac, symbolTable);
       parseTree->get_root()->accept(c);
-      //c->print_code();
+      c->write_exit();
+      c->write_code();
     }
   }
 

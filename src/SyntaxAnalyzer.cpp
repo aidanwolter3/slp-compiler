@@ -134,10 +134,10 @@ int SyntaxAnalyzer::parse() {
 
         //check each production
 
-        //S;S
+        //S -> S S
         if(prod == 1) {
-          pop_size = 3;
-          rep_token->t = 13;
+          pop_size = 2;
+          rep_token->t = 11;
           rep_token->l[0] = 'S';
 
           Statement *stm2 = (Statement*)parseTree->pop();
@@ -146,10 +146,17 @@ int SyntaxAnalyzer::parse() {
           parseTree->push(stm);
         }
 
-        //id:=E
+        //S ->
         else if(prod == 2) {
+          pop_size = 0;
+          rep_token->t = 11;
+          rep_token->l[0] = 'S';
+        }
+
+        //S -> id assign E
+        else if(prod == 3) {
           pop_size = 3;
-          rep_token->t = 13;
+          rep_token->t = 11;
           rep_token->l[0] = 'S';
 
           char *lexem = (char*)malloc(sizeof(t_stack[t_stack_cnt-3]));
@@ -160,28 +167,32 @@ int SyntaxAnalyzer::parse() {
           parseTree->push(stm);
         }
 
-        //print(L)
-        else if(prod == 3) {
-          pop_size = 4;
-          rep_token->t = 13;
+        //S -> huck E
+        else if(prod == 4) {
+          pop_size = 2;
+          rep_token->t = 11;
           rep_token->l[0] = 'S';
 
-          ExpressionList *explist = (ExpressionList*)parseTree->pop();
-          PrintStatement *print = new PrintStatement(explist);
+          Expression *exp = (Expression*)parseTree->pop();
+          PrintStatement *print = new PrintStatement(exp);
           parseTree->push(print);
         }
 
-        //epsilon
-        else if(prod == 4) {
-          pop_size = 0;
-          rep_token->t = 13;
-          rep_token->l[0] = 'S';
-        }
-
-        //id
+        //E -> num
         else if(prod == 5) {
           pop_size = 1;
-          rep_token->t = 14;
+          rep_token->t = 12;
+          rep_token->l[0] = 'E';
+
+          int val = strtod((const char*)&t_stack[t_stack_cnt-1]->l, &stopstr);
+          NumExpression *num = new NumExpression(val);
+          parseTree->push(num);
+        }
+
+        //E -> id
+        else if(prod == 6) {
+          pop_size = 1;
+          rep_token->t = 12;
           rep_token->l[0] = 'E';
 
           char *lexem = (char*)malloc(sizeof(&t_stack[t_stack_cnt-1]));
@@ -190,21 +201,10 @@ int SyntaxAnalyzer::parse() {
           parseTree->push(id);
         }
 
-        //num
-        else if(prod == 6) {
-          pop_size = 1;
-          rep_token->t = 14;
-          rep_token->l[0] = 'E';
-
-          int val = strtod((const char*)&t_stack[t_stack_cnt-1]->l, &stopstr);
-          NumExpression *num = new NumExpression(val);
-          parseTree->push(num);
-        }
-
-        //EBE
+        //E -> E B E
         else if(prod == 7) {
           pop_size = 3;
-          rep_token->t = 14;
+          rep_token->t = 12;
           rep_token->l[0] = 'E';
 
           Expression *exp2 = (Expression*)parseTree->pop();
@@ -214,22 +214,10 @@ int SyntaxAnalyzer::parse() {
           parseTree->push(exp);
         }
 
-        //(S,E)
+        //L -> E comma L
         else if(prod == 8) {
-          pop_size = 5;
-          rep_token->t = 14;
-          rep_token->l[0] = 'E';
-
-          Expression *exp = (Expression*)parseTree->pop();
-          Statement *stm = (Statement*)parseTree->pop();
-          SequenceExpression *seq = new SequenceExpression(stm, exp);
-          parseTree->push(seq);
-        }
-
-        //E,L
-        else if(prod == 9) {
           pop_size = 3;
-          rep_token->t = 15;
+          rep_token->t = 13;
           rep_token->l[0] = 'L';
 
           ExpressionList *list = (ExpressionList*)parseTree->pop();
@@ -238,47 +226,47 @@ int SyntaxAnalyzer::parse() {
           parseTree->push(newlist);
         }
 
-        //E
-        else if(prod == 10) {
+        //L -> E
+        else if(prod == 9) {
           pop_size = 1;
-          rep_token->t = 15;
+          rep_token->t = 13;
           rep_token->l[0] = 'L';
         }
 
-        //+
-        else if(prod == 11) {
+        //B -> plus
+        else if(prod == 10) {
           pop_size = 1;
-          rep_token->t = 16;
+          rep_token->t = 14;
           rep_token->l[0] = 'B';
 
           Plus *plus = new Plus();
           parseTree->push(plus);
         }
 
-        //-
-        else if(prod == 12) {
+        //B -> minus
+        else if(prod == 11) {
           pop_size = 1;
-          rep_token->t = 16;
+          rep_token->t = 14;
           rep_token->l[0] = 'B';
 
           Minus *minus = new Minus();
           parseTree->push(minus);
         }
-        
-        //*
-        else if(prod == 13) {
+
+        //B -> mult
+        else if(prod == 12) {
           pop_size = 1;
-          rep_token->t = 16;
+          rep_token->t = 14;
           rep_token->l[0] = 'B';
 
           Multiply *multiply = new Multiply();
           parseTree->push(multiply);
         }
 
-        // /
-        else if(prod == 14) {
+        //B -> div
+        else if(prod == 13) {
           pop_size = 1;
-          rep_token->t = 16;
+          rep_token->t = 14;
           rep_token->l[0] = 'B';
 
           Divide *divide = new Divide();

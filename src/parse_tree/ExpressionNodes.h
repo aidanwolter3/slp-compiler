@@ -18,10 +18,5 @@ class OperationExpression : Expression {
   BinaryOperation op;
   OperationExpression(Expression exp1, Expression exp2, BinaryOperation op);
 };
-class SequenceExpression : Expression {
-  Statement stm;
-  Expression exp;
-  SequenceExpression(Statement stm, Expression exp);
-};
 
 #endif

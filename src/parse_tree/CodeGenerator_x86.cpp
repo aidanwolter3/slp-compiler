@@ -171,7 +171,7 @@ void CodeGenerator_x86::release_reg(const char *reg) {
     regs.edx = 0;
   }
 }
-void CodeGenerator_x86::print_code() {
+void CodeGenerator_x86::write_exit() {
   len += sprintf(code+len, "add esp,%d\n"
                            "\n;exit\n"
                            "push dword 0\n"
@@ -179,9 +179,12 @@ void CodeGenerator_x86::print_code() {
                            "sub esp,12\n"
                            "int 0x80\n"
                            "add esp,4\n", symbolTable->size*4);
-
-  FILE *f = fopen("output.asm", "w");
+}
+void CodeGenerator_x86::print_code() {
   printf("%s", code);
+}
+void CodeGenerator_x86::write_code() {
+  FILE *f = fopen("output.asm", "w");
   fprintf(f, "%s", code);
   fclose(f);
 }
@@ -201,7 +204,7 @@ void* CodeGenerator_x86::visit(AssignStatement *stm) {
   return new CodeReturn(0, 1);
 }
 void* CodeGenerator_x86::visit(PrintStatement *stm) {
-  CodeReturn *c = (CodeReturn*)stm->list->accept(this);
+  CodeReturn *c = (CodeReturn*)stm->exp->accept(this);
 
   len += sprintf(code+len, "push dword %s\n", c->tmp);
   len += sprintf(code+len, "call putint\n");
@@ -267,13 +270,6 @@ void* CodeGenerator_x86::visit(OperationExpression *exp) {
 
   CodeReturn *c = new CodeReturn(0, 5);
   strcpy(c->tmp, reg);
-  return c;
-}
-void* CodeGenerator_x86::visit(SequenceExpression *exp) {
-  exp->stm->accept(this);
-  CodeReturn *c2 = (CodeReturn*)exp->exp->accept(this);
-  CodeReturn *c = new CodeReturn(0, 6);
-  strcpy(c->tmp, c2->tmp);
   return c;
 }
 void* CodeGenerator_x86::visit(PairExpressionList *exp) {

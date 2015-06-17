@@ -22,7 +22,7 @@ void* VariableEvaluatorVisitor::visit(AssignStatement *stm) {
   return new IntegerReturn(0, 1);
 }
 void* VariableEvaluatorVisitor::visit(PrintStatement *stm) {
-  stm->list->accept(this);
+  stm->exp->accept(this);
   return new IntegerReturn(0, 2);
 }
 void* VariableEvaluatorVisitor::visit(IdExpression *exp) {
@@ -56,11 +56,6 @@ void* VariableEvaluatorVisitor::visit(OperationExpression *exp) {
   else {
     return new IntegerReturn(0, 5);
   }
-}
-void* VariableEvaluatorVisitor::visit(SequenceExpression *exp) {
-  exp->stm->accept(this);
-  exp->exp->accept(this);
-  return new IntegerReturn(0, 6);
 }
 void* VariableEvaluatorVisitor::visit(PairExpressionList *exp) {
   exp->exp->accept(this);

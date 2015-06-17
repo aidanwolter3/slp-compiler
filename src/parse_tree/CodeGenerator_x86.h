@@ -13,7 +13,6 @@
 #include "IdExpression.h"
 #include "NumExpression.h"
 #include "OperationExpression.h"
-#include "SequenceExpression.h"
 #include "PairExpressionList.h"
 #include "LastExpressionList.h"
 #include "Plus.h"
@@ -49,14 +48,15 @@ class CodeGenerator_x86 : public Visitor {
     };
   public:
     CodeGenerator_x86(const char *target, SymbolTable *symbolTable);
+    void write_exit();
     void print_code();
+    void write_code();
     void* visit(CompoundStatement *s);
     void* visit(AssignStatement *stm);
     void* visit(PrintStatement *stm);
     void* visit(IdExpression *exp);
     void* visit(NumExpression *exp);
     void* visit(OperationExpression *exp);
-    void* visit(SequenceExpression *exp);
     void* visit(PairExpressionList *exp);
     void* visit(LastExpressionList *exp);
     void* visit(Plus *op);

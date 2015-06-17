@@ -8,7 +8,6 @@
 #include "IdExpression.h"
 #include "NumExpression.h"
 #include "OperationExpression.h"
-#include "SequenceExpression.h"
 #include "PairExpressionList.h"
 #include "LastExpressionList.h"
 #include "Plus.h"

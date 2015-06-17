@@ -9,7 +9,6 @@
 #include "IdExpression.h"
 #include "NumExpression.h"
 #include "OperationExpression.h"
-#include "SequenceExpression.h"
 #include "PairExpressionList.h"
 #include "LastExpressionList.h"
 #include "Plus.h"
@@ -25,7 +24,6 @@ class PrettyPrintVisitor : public Visitor {
     void* visit(IdExpression *exp);
     void* visit(NumExpression *exp);
     void* visit(OperationExpression *exp);
-    void* visit(SequenceExpression *exp);
     void* visit(PairExpressionList *exp);
     void* visit(LastExpressionList *exp);
     void* visit(Plus *op);

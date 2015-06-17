@@ -14,7 +14,7 @@ void* PrettyPrintVisitor::visit(AssignStatement *stm) {
 }
 void* PrettyPrintVisitor::visit(PrintStatement *stm) {
   printf("print(");
-  stm->list->accept(this);
+  stm->exp->accept(this);
   printf(")");
   return 0;
 }
@@ -32,14 +32,6 @@ void* PrettyPrintVisitor::visit(OperationExpression *exp) {
   exp->op->accept(this);
   printf(" ");
   exp->exp2->accept(this);
-  return 0;
-}
-void* PrettyPrintVisitor::visit(SequenceExpression *exp) {
-  printf("(");
-  exp->stm->accept(this);
-  printf(", ");
-  exp->exp->accept(this);
-  printf(")");
   return 0;
 }
 void* PrettyPrintVisitor::visit(PairExpressionList *exp) {

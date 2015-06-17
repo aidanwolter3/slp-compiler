@@ -1,7 +1,7 @@
 #include "PrintStatement.h"
 
-PrintStatement::PrintStatement(ExpressionList *l) {
-  list = l;
+PrintStatement::PrintStatement(Expression *e) {
+  exp = e;
 }
 
 void* PrintStatement::accept(Visitor *v) {

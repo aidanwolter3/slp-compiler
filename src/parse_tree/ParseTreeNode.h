@@ -7,7 +7,6 @@ class PrintStatement;
 class IdExpression;
 class NumExpression;
 class OperationExpression;
-class SequenceExpression;
 class PairExpressionList;
 class LastExpressionList;
 class Plus;
@@ -22,7 +21,6 @@ class Visitor {
     virtual void* visit(IdExpression *s) = 0;
     virtual void* visit(NumExpression *s) = 0;
     virtual void* visit(OperationExpression *s) = 0;
-    virtual void* visit(SequenceExpression *s) = 0;
     virtual void* visit(PairExpressionList *s) = 0;
     virtual void* visit(LastExpressionList *s) = 0;
     virtual void* visit(Plus *s) = 0;
