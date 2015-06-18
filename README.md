@@ -32,13 +32,13 @@ $ ./output
 
 This is a sample of a Straight Line Program (SLP).
 ```
-a := 1;
-b := 2;
-c := 3;
-d := 4;
+a = 1
+b = 2
+c = 3
+d = 4
 
-e := a + b + c + d;
-print(e);
+e = a + b + c + d
+huck e
 ```
 
 The language is defined in two files: ```lex_table.csv``` and ```parse_table.csv```.
@@ -48,15 +48,14 @@ The language is defined in two files: ```lex_table.csv``` and ```parse_table.csv
 The language is an LALR1 and the productions are listed below.
 
 * S' -> S
-* S -> S;S
-* S -> id:=E
-* S -> print(L)
+* S -> S S
+* S -> id = E
+* S -> huck E
 * S -> epsilon
 * E -> id
 * E -> num
-* E -> EBE
-* E -> (S,E)
-* L -> E,L
+* E -> E B E
+* L -> E , L
 * L -> E
 * B -> +
 * B -> -
