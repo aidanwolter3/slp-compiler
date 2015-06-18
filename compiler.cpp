@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     //parseTree.get_root()->accept(&v2);
     //v2.printVariables();
 
-    printf("\n\nStarting target code generation...\n");
+    printf("Starting target code generation...\n");
     const char *target_mac = "mac";
     if(argc >= 3) {
       CodeGenerator_x86 *c = new CodeGenerator_x86(argv[2], symbolTable);

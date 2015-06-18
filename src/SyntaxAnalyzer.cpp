@@ -32,7 +32,7 @@ int SyntaxAnalyzer::parse() {
   Token *last_t = new Token();
   char *stopstr;
 
-  if(t->t == 1) {
+  if(t->t == 2) {
     symbolTable->add(t->t, t->l, 0); //type = 0 for now
   }
 
@@ -53,7 +53,7 @@ int SyntaxAnalyzer::parse() {
       //get the next token
       memcpy(last_t, t, sizeof(&t));
       t = lexicalAnalyzer->nextToken();
-      if(t->t == 1) {
+      if(t->t == 2) {
         symbolTable->add(t->t, t->l, 0); //type = 0 for now
       }
     }
@@ -114,7 +114,7 @@ int SyntaxAnalyzer::parse() {
         //get another token
         memcpy(last_t, t, sizeof(&t));
         t = lexicalAnalyzer->nextToken();
-        if(t->t == 1) {
+        if(t->t == 2) {
           symbolTable->add(t->t, t->l, 0); //type = 0 for now
         }
         continue;
@@ -303,7 +303,7 @@ int SyntaxAnalyzer::parse() {
         t = lexicalAnalyzer->nextToken();
 
         //if an id
-        if(t->t == 1) {
+        if(t->t == 2) {
           symbolTable->add(t->t, t->l, 0); //type = 0 for now
         }
       }
