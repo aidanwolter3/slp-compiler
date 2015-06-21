@@ -16,6 +16,7 @@
 #include "src/parse_tree/VariableEvaluatorVisitor.h"
 #include "src/parse_tree/PrettyPrintVisitor.h"
 #include "src/parse_tree/CodeGenerator_macho32_osx.h"
+#include "src/parse_tree/CodeGenerator_macho32_ubu.h"
 #include "src/parse_tree/CodeGenerator_macho64_osx.h"
 
 //main method
@@ -25,6 +26,7 @@ int main(int argc, char *argv[]) {
   char target[10] = "osx";
   char abi[10] = "macho64";
   char output[PATH_MAX] = "output.asm";
+  char *input;
 
   //parse the arguments
   for(int i = 1; i < argc; i++) {
@@ -72,6 +74,18 @@ int main(int argc, char *argv[]) {
       strcpy(output, argv[i+1]);
       i++;
     }
+
+    //input file
+    else if(input == NULL) {
+      input = (char*)malloc(sizeof(argv[i]));
+      strcpy(input, argv[i]);
+    }
+
+    //invalid
+    else {
+      printf("Unknown argument: %s\n", argv[i]);
+      return 0;
+    }
   }
 
   //initialize the symbol table and parse tree
@@ -92,7 +106,7 @@ int main(int argc, char *argv[]) {
     printf("(example ./compiler test)\n");
     return 0;
   }
-  FILE *infile = fopen(argv[1], "r");
+  FILE *infile = fopen(input, "r");
   if(infile == NULL) {
     printf("Could not find the input file: %s\n", argv[1]);
     printf("Please ensure that it exists\n");
@@ -119,16 +133,35 @@ int main(int argc, char *argv[]) {
   int ret = syntaxAnalyzer->parse();
   if(ret == 0) {
     if(strcmp(target, "osx") == 0) {
-      CodeGenerator_macho32_osx *c = new CodeGenerator_macho32_osx(symbolTable, output);
-      parseTree->get_root()->accept(c);
-      c->write_exit();
-      c->write_code();
+      if(strcmp(abi, "macho32") == 0) {
+        CodeGenerator_macho32_osx *c = new CodeGenerator_macho32_osx(symbolTable, output);
+        parseTree->get_root()->accept(c);
+        c->write_exit();
+        c->write_code();
+      }
+      else if(strcmp(abi, "macho64") == 0) {
+        CodeGenerator_macho64_osx *c = new CodeGenerator_macho64_osx(symbolTable, output);
+        parseTree->get_root()->accept(c);
+        c->write_exit();
+        c->write_code();
+      }
+      else {
+        printf("Currently, the compatible Ubuntu formats are:\n\tmacho32\n\tmacho64\n");
+      }
     }
     else if(strcmp(target, "win") == 0) {
       printf("Windows is not currently supported\n");
     }
     else if(strcmp(target, "ubu") == 0) {
-      //CodeGenerator_macho32_ubu *c = new CodeGenerator_macho32_ubu(symbolTable, output);
+      if(strcmp(abi, "macho32") == 0) {
+        CodeGenerator_macho32_ubu *c = new CodeGenerator_macho32_ubu(symbolTable, output);
+        parseTree->get_root()->accept(c);
+        c->write_exit();
+        c->write_code();
+      }
+      else {
+        printf("Currently, the compatible Ubuntu formats are:\n\tmacho32\n");
+      }
     }
   }
 
