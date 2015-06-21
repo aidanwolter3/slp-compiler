@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "src/symbol_table/SymbolTable.h"
 #include "src/LexicalAnalyzer.h"
@@ -14,10 +15,64 @@
 #include "src/parse_tree/ParseTree.h"
 #include "src/parse_tree/VariableEvaluatorVisitor.h"
 #include "src/parse_tree/PrettyPrintVisitor.h"
-#include "src/parse_tree/CodeGenerator_x86.h"
+#include "src/parse_tree/CodeGenerator_macho32_osx.h"
+#include "src/parse_tree/CodeGenerator_macho64_osx.h"
 
 //main method
 int main(int argc, char *argv[]) {
+
+  //set the default arguments
+  char target[10] = "osx";
+  char abi[10] = "macho64";
+  char output[PATH_MAX] = "output.asm";
+
+  //parse the arguments
+  for(int i = 1; i < argc; i++) {
+
+    //format
+    if(strcmp(argv[i], "-f") == 0) {
+      if(i+1 >= argc) {
+        printf("Format not specified\n");
+        return 0;
+      }
+      strcpy(abi, argv[i+1]);
+      i++;
+      if(strcmp(abi, "macho") != 0 &&
+         strcmp(abi, "macho32") != 0 &&
+         strcmp(abi, "macho64") != 0) {
+        printf("Unknown format: %s\n", abi);
+        return 0;
+      }
+    }
+
+    //target
+    else if(strcmp(argv[i], "-t") == 0 ||
+            strcmp(argv[i], "--target") == 0) {
+      if(i+1 >= argc) {
+        printf("Target not specified\n");
+        return 0;
+      }
+      strcpy(target, argv[i+1]);
+      i++;
+      if(strcmp(target, "osx") != 0 &&
+         strcmp(target, "win") != 0 &&
+         strcmp(target, "ubu") != 0) {
+        printf("Unknown target: %s\n", target);
+        return 0;
+      }
+    }
+
+    //output file
+    else if(strcmp(argv[i], "-o") == 0 ||
+            strcmp(argv[i], "--output") == 0) {
+      if(i+1 >= argc) {
+        printf("Output file not specified\n");
+        return 0;
+      }
+      strcpy(output, argv[i+1]);
+      i++;
+    }
+  }
 
   //initialize the symbol table and parse tree
   SymbolTable *symbolTable = new SymbolTable();
@@ -63,35 +118,20 @@ int main(int argc, char *argv[]) {
   //complete the parsing
   int ret = syntaxAnalyzer->parse();
   if(ret == 0) {
-    printf("The file has proper syntax\n");
-
-    //printf("\nPrettyPrintVisitor results:\n");
-    //PrettyPrintVisitor *v = new PrettyPrintVisitor();
-    //parseTree->get_root()->accept(v);
-
-    //printf("\n\nVariableEvaluatorVisitor results:\n");
-    //VariableEvaluatorVisitor v2 = VariableEvaluatorVisitor();
-    //parseTree.get_root()->accept(&v2);
-    //v2.printVariables();
-
-    printf("Starting target code generation...\n");
-    const char *target_mac = "mac";
-    if(argc >= 3) {
-      CodeGenerator_x86 *c = new CodeGenerator_x86(argv[2], symbolTable);
+    if(strcmp(target, "osx") == 0) {
+      CodeGenerator_macho32_osx *c = new CodeGenerator_macho32_osx(symbolTable, output);
       parseTree->get_root()->accept(c);
       c->write_exit();
       c->write_code();
     }
-    else { //default to mac
-      CodeGenerator_x86 *c = new CodeGenerator_x86(target_mac, symbolTable);
-      parseTree->get_root()->accept(c);
-      c->write_exit();
-      c->write_code();
+    else if(strcmp(target, "win") == 0) {
+      printf("Windows is not currently supported\n");
+    }
+    else if(strcmp(target, "ubu") == 0) {
+      //CodeGenerator_macho32_ubu *c = new CodeGenerator_macho32_ubu(symbolTable, output);
     }
   }
 
   fclose(infile);
-
-  //symbol_table_dump();
   return 0;
 }

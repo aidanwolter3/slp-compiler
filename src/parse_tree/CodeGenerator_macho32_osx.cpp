@@ -1,10 +1,10 @@
-#include "CodeGenerator_x86.h"
+#include "CodeGenerator_macho32_osx.h"
 
-const char *head_mac =     "global start\n"
+const char* CodeGenerator_macho32_osx::head =
+                           "global start\n"
                            "section .text\n";
-const char *head_ubu =     "global _start\n"
-                           "section .text\n";
-const char *putint =       "\nputint:\n"
+const char* CodeGenerator_macho32_osx::putint =
+                           "\nputint:\n"
                            "push eax\n"
                            "push ebx\n"
                            "push ecx\n"
@@ -34,7 +34,8 @@ const char *putint =       "\nputint:\n"
                            "pop ebx\n"
                            "pop eax\n"
                            "ret\n";
-const char *putstr =       "\nputstr:\n"
+const char* CodeGenerator_macho32_osx::putstr =
+                           "\nputstr:\n"
                            "push eax\n"
                            "mov esi,dword[esp+8]\n"
                            ".putstr0:\n"
@@ -49,7 +50,8 @@ const char *putstr =       "\nputstr:\n"
                            ".putstr1:\n"
                            "pop eax\n"
                            "ret\n";
-const char *putchar_mac =  "\nputchar:\n"
+const char* CodeGenerator_macho32_osx::putchar =
+                           "\nputchar:\n"
                            "push eax\n"
                            "push ebx\n"
                            "push ecx\n"
@@ -69,28 +71,14 @@ const char *putchar_mac =  "\nputchar:\n"
                            "pop ebx\n"
                            "pop eax\n"
                            "ret\n";
-const char *putchar_ubu =  "\nputchar:\n"
-                           "push eax\n"
-                           "push ebx\n"
-                           "push ecx\n"
-                           "push edx\n"
-                           "push dword [esp+20]\n"
-                           "mov ebx,1\n"
-                           "mov ecx,esp\n"
-                           "mov edx,1\n"
-                           "mov eax,4\n"
-                           "int 0x80\n"
-                           "add esp,4\n"
-                           "pop edx\n"
-                           "pop ecx\n"
-                           "pop ebx\n"
-                           "pop eax\n"
-                           "ret\n";
 
-CodeGenerator_x86::CodeGenerator_x86(const char *target, SymbolTable *symbolTable) {
+CodeGenerator_macho32_osx::CodeGenerator_macho32_osx(SymbolTable *symbolTable, char *output) {
 
   //grab the symbol table
   this->symbolTable = symbolTable;
+
+  //copy the output location
+  strcpy(this->output, output);
 
   //initialize the code
   code = (char*)malloc(2000*sizeof(char));
@@ -102,34 +90,18 @@ CodeGenerator_x86::CodeGenerator_x86(const char *target, SymbolTable *symbolTabl
   regs.ecx = 0;
   regs.edx = 0;
 
-  const char *target_mac = "mac";
-  const char *target_ubu = "ubu";
+  len += sprintf(code+len, "%s", head);
 
   //add the necessary functions for printing an integer
-  if(strcmp(target, target_mac) == 0) {
-    len += sprintf(code+len, "%s", head_mac);
-  }
-  else if(strcmp(target, target_ubu) == 0) {
-    len += sprintf(code+len, "%s", head_ubu);
-  }
-
   len += sprintf(code+len, "%s", putint);
   len += sprintf(code+len, "%s", putstr);
-  
-  if(strcmp(target, target_mac) == 0) {
-    len += sprintf(code+len, "%s", putchar_mac);
-    len += sprintf(code+len, "\nstart:\n"
-                             "mov ebp,esp\n"
-                             "sub esp,%d\n", symbolTable->size*4);
+  len += sprintf(code+len, "%s", putchar);
+
+  len += sprintf(code+len, "\nstart:\n"
+                           "mov ebp,esp\n"
+                           "sub esp,%d\n", symbolTable->size*4);
   }
-  else if (strcmp(target, target_ubu) == 0) {
-    len += sprintf(code+len, "%s", putchar_ubu);
-    len += sprintf(code+len, "\n_start:\n"
-                             "mov ebp,esp\n"
-                             "sub esp,%d\n", symbolTable->size*4);
-  }
-}
-const char* CodeGenerator_x86::next_reg() {
+const char* CodeGenerator_macho32_osx::next_reg() {
   if(regs.eax == 0) {
     const char *eax = "eax";
     regs.eax = 1;
@@ -153,7 +125,7 @@ const char* CodeGenerator_x86::next_reg() {
   const char *noreg = "";
   return noreg;
 }
-void CodeGenerator_x86::release_reg(const char *reg) {
+void CodeGenerator_macho32_osx::release_reg(const char *reg) {
   const char *eax = "eax";
   const char *ebx = "ebx";
   const char *ecx = "ecx";
@@ -171,7 +143,7 @@ void CodeGenerator_x86::release_reg(const char *reg) {
     regs.edx = 0;
   }
 }
-void CodeGenerator_x86::write_exit() {
+void CodeGenerator_macho32_osx::write_exit() {
   len += sprintf(code+len, "add esp,%d\n"
                            "\n;exit\n"
                            "push dword 0\n"
@@ -180,20 +152,20 @@ void CodeGenerator_x86::write_exit() {
                            "int 0x80\n"
                            "add esp,4\n", symbolTable->size*4);
 }
-void CodeGenerator_x86::print_code() {
+void CodeGenerator_macho32_osx::print_code() {
   printf("%s", code);
 }
-void CodeGenerator_x86::write_code() {
-  FILE *f = fopen("output.asm", "w");
+void CodeGenerator_macho32_osx::write_code() {
+  FILE *f = fopen(output, "w");
   fprintf(f, "%s", code);
   fclose(f);
 }
-void* CodeGenerator_x86::visit(CompoundStatement *s) {
+void* CodeGenerator_macho32_osx::visit(CompoundStatement *s) {
   s->stm1->accept(this);
   s->stm2->accept(this);
   return new CodeReturn(0, 0);
 }
-void* CodeGenerator_x86::visit(AssignStatement *stm) {
+void* CodeGenerator_macho32_osx::visit(AssignStatement *stm) {
   CodeReturn *c1 = (CodeReturn*)stm->id->accept(this);
   CodeReturn *c2 = (CodeReturn*)stm->exp->accept(this);
 
@@ -203,7 +175,7 @@ void* CodeGenerator_x86::visit(AssignStatement *stm) {
 
   return new CodeReturn(0, 1);
 }
-void* CodeGenerator_x86::visit(PrintStatement *stm) {
+void* CodeGenerator_macho32_osx::visit(PrintStatement *stm) {
   CodeReturn *c = (CodeReturn*)stm->exp->accept(this);
 
   len += sprintf(code+len, "push dword %s\n", c->tmp);
@@ -213,13 +185,13 @@ void* CodeGenerator_x86::visit(PrintStatement *stm) {
 
   return new CodeReturn(0, 2);
 }
-void* CodeGenerator_x86::visit(IdExpression *exp) {
+void* CodeGenerator_macho32_osx::visit(IdExpression *exp) {
   CodeReturn *c = new CodeReturn(0, 3);
   Symbol *sym = symbolTable->get(exp->lexem);
   sprintf(c->tmp, "[ebp-%d]", sym->loc);
   return c;
 }
-void* CodeGenerator_x86::visit(NumExpression *exp) {
+void* CodeGenerator_macho32_osx::visit(NumExpression *exp) {
   const char *reg = next_reg();
   len += sprintf(code+len, "mov %s,%d\n", reg, exp->val);
 
@@ -227,7 +199,7 @@ void* CodeGenerator_x86::visit(NumExpression *exp) {
   strcpy(c->tmp, reg);
   return c;
 }
-void* CodeGenerator_x86::visit(OperationExpression *exp) {
+void* CodeGenerator_macho32_osx::visit(OperationExpression *exp) {
   CodeReturn *c1 = (CodeReturn*)exp->exp1->accept(this);
   CodeReturn *c2 = (CodeReturn*)exp->op->accept(this);
   CodeReturn *c3 = (CodeReturn*)exp->exp2->accept(this);
@@ -272,28 +244,28 @@ void* CodeGenerator_x86::visit(OperationExpression *exp) {
   strcpy(c->tmp, reg);
   return c;
 }
-void* CodeGenerator_x86::visit(PairExpressionList *exp) {
+void* CodeGenerator_macho32_osx::visit(PairExpressionList *exp) {
   exp->exp->accept(this);
   CodeReturn *c2 = (CodeReturn*)exp->list->accept(this);
   CodeReturn *c = new CodeReturn(0, 7);
   strcpy(c->tmp, c2->tmp);
   return c;
 }
-void* CodeGenerator_x86::visit(LastExpressionList *exp) {
+void* CodeGenerator_macho32_osx::visit(LastExpressionList *exp) {
   CodeReturn *c1 = (CodeReturn*)exp->exp->accept(this);
   CodeReturn *c = new CodeReturn(0, 8);
   strcpy(c->tmp, c1->tmp);
   return c;
 }
-void* CodeGenerator_x86::visit(Plus *op) {
+void* CodeGenerator_macho32_osx::visit(Plus *op) {
   return new CodeReturn(0, 9);
 }
-void* CodeGenerator_x86::visit(Minus *op) {
+void* CodeGenerator_macho32_osx::visit(Minus *op) {
   return new CodeReturn(0, 10);
 }
-void* CodeGenerator_x86::visit(Divide *op) {
+void* CodeGenerator_macho32_osx::visit(Divide *op) {
   return new CodeReturn(0, 11);
 }
-void* CodeGenerator_x86::visit(Multiply *op) {
+void* CodeGenerator_macho32_osx::visit(Multiply *op) {
   return new CodeReturn(0, 12);
 }

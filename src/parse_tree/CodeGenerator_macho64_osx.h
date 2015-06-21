@@ -1,9 +1,10 @@
-#ifndef CODE_GENERATOR_X86
-#define CODE_GENERATOR_X86
+#ifndef CODE_GENERATOR_MACHO64_OSX
+#define CODE_GENERATOR_MACHO64_OSX
 
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 
 #include "../symbol_table/SymbolTable.h"
 
@@ -20,8 +21,13 @@
 #include "Divide.h"
 #include "Multiply.h"
 
-class CodeGenerator_x86 : public Visitor {
+class CodeGenerator_macho64_osx : public Visitor {
   private:
+    static const char *head;
+    static const char *putint;
+    static const char *putstr;
+    static const char *putchar;
+
     char *code;
     int len;
     
@@ -36,6 +42,7 @@ class CodeGenerator_x86 : public Visitor {
     void release_reg(const char *reg);
 
     SymbolTable *symbolTable;
+    char output[PATH_MAX];
 
     class CodeReturn {
       public:
@@ -47,7 +54,7 @@ class CodeGenerator_x86 : public Visitor {
         };
     };
   public:
-    CodeGenerator_x86(const char *target, SymbolTable *symbolTable);
+    CodeGenerator_macho64_osx(SymbolTable *symbolTable, char *output);
     void write_exit();
     void print_code();
     void write_code();
