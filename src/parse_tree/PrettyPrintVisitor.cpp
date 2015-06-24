@@ -26,6 +26,10 @@ void* PrettyPrintVisitor::visit(NumExpression *exp) {
   printf("%d", exp->val);
   return 0;
 }
+void* PrettyPrintVisitor::visit(StrExpression *exp) {
+  printf("%s", exp->val);
+  return 0;
+}
 void* PrettyPrintVisitor::visit(OperationExpression *exp) {
   exp->exp1->accept(this);
   printf(" ");

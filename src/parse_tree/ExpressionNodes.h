@@ -13,6 +13,9 @@ class NumExpression : Expression {
   int val;
   NumExpression(int v);
 };
+class StrExpression : Expression {
+  
+};
 class OperationExpression : Expression {
   Expression exp1, exp2;
   BinaryOperation op;

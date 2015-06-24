@@ -1,5 +1,2 @@
 var = 9
-a = 10
-huck var + a
-what = 8 / 4 + 3
-huck what
+huck "hi"

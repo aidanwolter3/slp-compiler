@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "ult.h"
 #include "LexicalAnalyzer.h"
 #include "symbol_table/SymbolTable.h"
 #include "csv/csv.h"

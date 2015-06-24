@@ -7,6 +7,7 @@
 #include "PrintStatement.h"
 #include "IdExpression.h"
 #include "NumExpression.h"
+#include "StrExpression.h"
 #include "OperationExpression.h"
 #include "PairExpressionList.h"
 #include "LastExpressionList.h"

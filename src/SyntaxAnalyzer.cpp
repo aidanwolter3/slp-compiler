@@ -133,144 +133,172 @@ int SyntaxAnalyzer::parse() {
         Token *rep_token = new Token();//what to push onto the token stack
 
         //check each production
+        switch(prod) {
 
-        //S -> S S
-        if(prod == 1) {
-          pop_size = 2;
-          rep_token->t = 11;
-          rep_token->l[0] = 'S';
+          //S -> S S
+          case STATEMENT_PAIR_PROD: {
+            pop_size = 2;
+            rep_token->t = S_TOKEN;
+            rep_token->l[0] = 'S';
 
-          Statement *stm2 = (Statement*)parseTree->pop();
-          Statement *stm1 = (Statement*)parseTree->pop();
-          CompoundStatement *stm = new CompoundStatement(stm1, stm2);
-          parseTree->push(stm);
-        }
+            Statement *stm2 = (Statement*)parseTree->pop();
+            Statement *stm1 = (Statement*)parseTree->pop();
+            CompoundStatement *stm = new CompoundStatement(stm1, stm2);
+            parseTree->push(stm);
+            break;
+          }
 
-        //S ->
-        else if(prod == 2) {
-          pop_size = 0;
-          rep_token->t = 11;
-          rep_token->l[0] = 'S';
-        }
+          //S ->
+          case STATEMENT_NULL_PROD: {
+            pop_size = 0;
+            rep_token->t = S_TOKEN;
+            rep_token->l[0] = 'S';
+            break;
+          }
 
-        //S -> id assign E
-        else if(prod == 3) {
-          pop_size = 3;
-          rep_token->t = 11;
-          rep_token->l[0] = 'S';
+          //S -> id assign E
+          case STATEMENT_ASGN_PROD: {
+            pop_size = 3;
+            rep_token->t = S_TOKEN;
+            rep_token->l[0] = 'S';
 
-          char *lexem = (char*)malloc(sizeof(t_stack[t_stack_cnt-3]));
-          strcpy(lexem, t_stack[t_stack_cnt-3]->l);
-          IdExpression *id = new IdExpression(lexem);
-          Expression *exp = (Expression*)parseTree->pop();
-          AssignStatement *stm = new AssignStatement(id, exp);
-          parseTree->push(stm);
-        }
+            char *lexem = (char*)malloc(sizeof(t_stack[t_stack_cnt-3]));
+            strcpy(lexem, t_stack[t_stack_cnt-3]->l);
+            IdExpression *id = new IdExpression(lexem);
+            Expression *exp = (Expression*)parseTree->pop();
+            AssignStatement *stm = new AssignStatement(id, exp);
+            parseTree->push(stm);
+            break;
+          }
 
-        //S -> huck E
-        else if(prod == 4) {
-          pop_size = 2;
-          rep_token->t = 11;
-          rep_token->l[0] = 'S';
+          //S -> huck E
+          case STATEMENT_HUCK_PROD: {
+            pop_size = 2;
+            rep_token->t = S_TOKEN;
+            rep_token->l[0] = 'S';
 
-          Expression *exp = (Expression*)parseTree->pop();
-          PrintStatement *print = new PrintStatement(exp);
-          parseTree->push(print);
-        }
+            Expression *exp = (Expression*)parseTree->pop();
+            PrintStatement *print = new PrintStatement(exp);
+            parseTree->push(print);
+            break;
+          }
 
-        //E -> num
-        else if(prod == 5) {
-          pop_size = 1;
-          rep_token->t = 12;
-          rep_token->l[0] = 'E';
+          //E -> num
+          case EXPRESSION_NUM_PROD: {
+            pop_size = 1;
+            rep_token->t = E_TOKEN;
+            rep_token->l[0] = 'E';
 
-          int val = strtod((const char*)&t_stack[t_stack_cnt-1]->l, &stopstr);
-          NumExpression *num = new NumExpression(val);
-          parseTree->push(num);
-        }
+            int val = strtod((const char*)&t_stack[t_stack_cnt-1]->l, &stopstr);
+            NumExpression *num = new NumExpression(val);
+            parseTree->push(num);
+            break;
+          }
 
-        //E -> id
-        else if(prod == 6) {
-          pop_size = 1;
-          rep_token->t = 12;
-          rep_token->l[0] = 'E';
+          //E -> id
+          case EXPRESSION_ID_PROD: {
+            pop_size = 1;
+            rep_token->t = E_TOKEN;
+            rep_token->l[0] = 'E';
 
-          char *lexem = (char*)malloc(sizeof(&t_stack[t_stack_cnt-1]));
-          strcpy(lexem, t_stack[t_stack_cnt-1]->l);
-          IdExpression *id = new IdExpression(lexem);
-          parseTree->push(id);
-        }
+            char *lexem = (char*)malloc(sizeof(&t_stack[t_stack_cnt-1]));
+            strcpy(lexem, t_stack[t_stack_cnt-1]->l);
+            IdExpression *id = new IdExpression(lexem);
+            parseTree->push(id);
+            break;
+          }
 
-        //E -> E B E
-        else if(prod == 7) {
-          pop_size = 3;
-          rep_token->t = 12;
-          rep_token->l[0] = 'E';
+          //E -> str
+          case EXPRESSION_STR_PROD: {
+            pop_size = 1;
+            rep_token->t = E_TOKEN;
+            rep_token->l[0] = 'E';
 
-          Expression *exp2 = (Expression*)parseTree->pop();
-          BinaryOperation *op = (BinaryOperation*)parseTree->pop();
-          Expression *exp1 = (Expression*)parseTree->pop();
-          OperationExpression *exp = new OperationExpression(exp1, exp2, op);
-          parseTree->push(exp);
-        }
+            char *s = (char*)malloc(sizeof(&t_stack[t_stack_cnt-1]));
+            strcpy(s, t_stack[t_stack_cnt-1]->l);
+            StrExpression *str = new StrExpression(s);
+            parseTree->push(str);
+            break;
+          }
 
-        //L -> E comma L
-        else if(prod == 8) {
-          pop_size = 3;
-          rep_token->t = 13;
-          rep_token->l[0] = 'L';
+          //E -> E B E
+          case EXPRESSION_OPR_PROD: {
+            pop_size = 3;
+            rep_token->t = E_TOKEN;
+            rep_token->l[0] = 'E';
 
-          ExpressionList *list = (ExpressionList*)parseTree->pop();
-          Expression *exp = (Expression*)parseTree->pop();
-          ExpressionList *newlist = new PairExpressionList(exp, list);
-          parseTree->push(newlist);
-        }
+            Expression *exp2 = (Expression*)parseTree->pop();
+            BinaryOperation *op = (BinaryOperation*)parseTree->pop();
+            Expression *exp1 = (Expression*)parseTree->pop();
+            OperationExpression *exp = new OperationExpression(exp1, exp2, op);
+            parseTree->push(exp);
+            break;
+          }
 
-        //L -> E
-        else if(prod == 9) {
-          pop_size = 1;
-          rep_token->t = 13;
-          rep_token->l[0] = 'L';
-        }
+          //L -> E comma L
+          case LIST_PAIR_PROD: {
+            pop_size = 3;
+            rep_token->t = L_TOKEN;
+            rep_token->l[0] = 'L';
 
-        //B -> plus
-        else if(prod == 10) {
-          pop_size = 1;
-          rep_token->t = 14;
-          rep_token->l[0] = 'B';
+            ExpressionList *list = (ExpressionList*)parseTree->pop();
+            Expression *exp = (Expression*)parseTree->pop();
+            ExpressionList *newlist = new PairExpressionList(exp, list);
+            parseTree->push(newlist);
+            break;
+          }
 
-          Plus *plus = new Plus();
-          parseTree->push(plus);
-        }
+          //L -> E
+          case LIST_END_PROD: {
+            pop_size = 1;
+            rep_token->t = L_TOKEN;
+            rep_token->l[0] = 'L';
+            break;
+          }
 
-        //B -> minus
-        else if(prod == 11) {
-          pop_size = 1;
-          rep_token->t = 14;
-          rep_token->l[0] = 'B';
+          //B -> plus
+          case OPERATION_PLUS_PROD: {
+            pop_size = 1;
+            rep_token->t = B_TOKEN;
+            rep_token->l[0] = 'B';
 
-          Minus *minus = new Minus();
-          parseTree->push(minus);
-        }
+            Plus *plus = new Plus();
+            parseTree->push(plus);
+            break;
+          }
 
-        //B -> mult
-        else if(prod == 12) {
-          pop_size = 1;
-          rep_token->t = 14;
-          rep_token->l[0] = 'B';
+          //B -> minus
+          case OPERATION_MINUS_PROD: {
+            pop_size = 1;
+            rep_token->t = B_TOKEN;
+            rep_token->l[0] = 'B';
 
-          Multiply *multiply = new Multiply();
-          parseTree->push(multiply);
-        }
+            Minus *minus = new Minus();
+            parseTree->push(minus);
+            break;
+          }
 
-        //B -> div
-        else if(prod == 13) {
-          pop_size = 1;
-          rep_token->t = 14;
-          rep_token->l[0] = 'B';
+          //B -> mult
+          case OPERATION_MULT_PROD: {
+            pop_size = 1;
+            rep_token->t = B_TOKEN;
+            rep_token->l[0] = 'B';
 
-          Divide *divide = new Divide();
-          parseTree->push(divide);
+            Multiply *multiply = new Multiply();
+            parseTree->push(multiply);
+            break;
+          }
+
+          //B -> div
+          case OPERATION_DIV_PROD: {
+            pop_size = 1;
+            rep_token->t = B_TOKEN;
+            rep_token->l[0] = 'B';
+
+            Divide *divide = new Divide();
+            parseTree->push(divide);
+            break;
+          }
         }
 
         //pop off the size of the production

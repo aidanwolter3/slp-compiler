@@ -1,3 +1,4 @@
+#include "../ult.h"
 #include "CodeGenerator_macho32_ubu.h"
 
 const char* CodeGenerator_macho32_ubu::head =
@@ -159,7 +160,7 @@ void CodeGenerator_macho32_ubu::write_code() {
 void* CodeGenerator_macho32_ubu::visit(CompoundStatement *s) {
   s->stm1->accept(this);
   s->stm2->accept(this);
-  return new CodeReturn(0, 0);
+  return new CodeReturn(0, STATEMENT_PAIR_PROD);
 }
 void* CodeGenerator_macho32_ubu::visit(AssignStatement *stm) {
   CodeReturn *c1 = (CodeReturn*)stm->id->accept(this);
@@ -169,7 +170,7 @@ void* CodeGenerator_macho32_ubu::visit(AssignStatement *stm) {
 
   release_reg(c2->tmp);
 
-  return new CodeReturn(0, 1);
+  return new CodeReturn(0, STATEMENT_ASGN_PROD);
 }
 void* CodeGenerator_macho32_ubu::visit(PrintStatement *stm) {
   CodeReturn *c = (CodeReturn*)stm->exp->accept(this);
@@ -179,10 +180,10 @@ void* CodeGenerator_macho32_ubu::visit(PrintStatement *stm) {
 
   release_reg(c->tmp);
 
-  return new CodeReturn(0, 2);
+  return new CodeReturn(0, STATEMENT_HUCK_PROD);
 }
 void* CodeGenerator_macho32_ubu::visit(IdExpression *exp) {
-  CodeReturn *c = new CodeReturn(0, 3);
+  CodeReturn *c = new CodeReturn(0, EXPRESSION_ID_PROD);
   Symbol *sym = symbolTable->get(exp->lexem);
   sprintf(c->tmp, "[ebp-%d]", sym->loc);
   return c;
@@ -191,7 +192,15 @@ void* CodeGenerator_macho32_ubu::visit(NumExpression *exp) {
   const char *reg = next_reg();
   len += sprintf(code+len, "mov %s,%d\n", reg, exp->val);
 
-  CodeReturn *c = new CodeReturn(4, 4);
+  CodeReturn *c = new CodeReturn(4, EXPRESSION_NUM_PROD);
+  strcpy(c->tmp, reg);
+  return c;
+}
+void* CodeGenerator_macho32_ubu::visit(StrExpression *exp) {
+  const char *reg = next_reg();
+  len += sprintf(code+len, "mov %s,%d\n", reg, 911);
+
+  CodeReturn *c = new CodeReturn(0, EXPRESSION_STR_PROD);
   strcpy(c->tmp, reg);
   return c;
 }
@@ -202,15 +211,15 @@ void* CodeGenerator_macho32_ubu::visit(OperationExpression *exp) {
 
   const char *reg = next_reg();
 
-  if(c2->type == 9) {
+  if(c2->type == OPERATION_PLUS_PROD) {
     len += sprintf(code+len, "mov %s,%s\n"
                              "add %s,%s\n", reg, c1->tmp, reg, c3->tmp);
   }
-  else if(c2->type == 10) {
+  else if(c2->type == OPERATION_MINUS_PROD) {
     len += sprintf(code+len, "mov %s,%s\n"
                              "sub %s,%s\n", reg, c1->tmp, reg, c3->tmp);
   }
-  else if(c2->type == 11) {
+  else if(c2->type == OPERATION_DIV_PROD) {
     len += sprintf(code+len, "push eax\n"
                              "push edx\n"
                              "mov eax,%s\n"
@@ -221,7 +230,7 @@ void* CodeGenerator_macho32_ubu::visit(OperationExpression *exp) {
                              "pop eax\n"
                              "mov %s,[esp-12]\n", c1->tmp, c3->tmp, c1->tmp, reg);
   }
-  else if (c2->type == 12) {
+  else if (c2->type == OPERATION_MULT_PROD) {
     len += sprintf(code+len, "push eax\n"
                              "push edx\n"
                              "mov eax,%s\n"
@@ -236,32 +245,32 @@ void* CodeGenerator_macho32_ubu::visit(OperationExpression *exp) {
   release_reg(c1->tmp);
   release_reg(c3->tmp);
 
-  CodeReturn *c = new CodeReturn(0, 5);
+  CodeReturn *c = new CodeReturn(0, EXPRESSION_OPR_PROD);
   strcpy(c->tmp, reg);
   return c;
 }
 void* CodeGenerator_macho32_ubu::visit(PairExpressionList *exp) {
   exp->exp->accept(this);
   CodeReturn *c2 = (CodeReturn*)exp->list->accept(this);
-  CodeReturn *c = new CodeReturn(0, 7);
+  CodeReturn *c = new CodeReturn(0, LIST_PAIR_PROD);
   strcpy(c->tmp, c2->tmp);
   return c;
 }
 void* CodeGenerator_macho32_ubu::visit(LastExpressionList *exp) {
   CodeReturn *c1 = (CodeReturn*)exp->exp->accept(this);
-  CodeReturn *c = new CodeReturn(0, 8);
+  CodeReturn *c = new CodeReturn(0, LIST_END_PROD);
   strcpy(c->tmp, c1->tmp);
   return c;
 }
 void* CodeGenerator_macho32_ubu::visit(Plus *op) {
-  return new CodeReturn(0, 9);
+  return new CodeReturn(0, OPERATION_PLUS_PROD);
 }
 void* CodeGenerator_macho32_ubu::visit(Minus *op) {
-  return new CodeReturn(0, 10);
+  return new CodeReturn(0, OPERATION_MINUS_PROD);
 }
 void* CodeGenerator_macho32_ubu::visit(Divide *op) {
-  return new CodeReturn(0, 11);
+  return new CodeReturn(0, OPERATION_DIV_PROD);
 }
 void* CodeGenerator_macho32_ubu::visit(Multiply *op) {
-  return new CodeReturn(0, 12);
+  return new CodeReturn(0, OPERATION_DIV_PROD);
 }

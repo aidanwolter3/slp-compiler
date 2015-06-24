@@ -13,6 +13,7 @@
 #include "PrintStatement.h"
 #include "IdExpression.h"
 #include "NumExpression.h"
+#include "StrExpression.h"
 #include "OperationExpression.h"
 #include "PairExpressionList.h"
 #include "LastExpressionList.h"
@@ -63,6 +64,7 @@ class CodeGenerator_macho64_osx : public Visitor {
     void* visit(PrintStatement *stm);
     void* visit(IdExpression *exp);
     void* visit(NumExpression *exp);
+    void* visit(StrExpression *exp);
     void* visit(OperationExpression *exp);
     void* visit(PairExpressionList *exp);
     void* visit(LastExpressionList *exp);
