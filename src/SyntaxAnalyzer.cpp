@@ -216,6 +216,11 @@ int SyntaxAnalyzer::parse() {
 
             char *s = (char*)malloc(sizeof(&t_stack[t_stack_cnt-1]));
             strcpy(s, t_stack[t_stack_cnt-1]->l);
+
+            //remove the quotes
+            s++;
+            s[strlen(s)-1] = 0; 
+
             StrExpression *str = new StrExpression(s);
             parseTree->push(str);
             break;
