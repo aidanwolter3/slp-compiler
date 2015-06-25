@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-//#define SYNDEBUG
-
 SyntaxAnalyzer::SyntaxAnalyzer(FILE *syn_file, LexicalAnalyzer *lexicalAnalyzer, SymbolTable *symbolTable, ParseTree *parseTree) {
   parseTable = new CSV(syn_file, &rows, &cols);
   this->lexicalAnalyzer = lexicalAnalyzer;
@@ -120,7 +118,7 @@ int SyntaxAnalyzer::parse() {
         continue;
       }
 
-      #ifdef SYNDEBUG
+      #ifdef DEBUG
       printf("cmd: %s\n", cmd);
       #endif
 
@@ -356,7 +354,7 @@ int SyntaxAnalyzer::parse() {
       }
 
 
-      #ifdef SYNDEBUG
+      #ifdef DEBUG
       printf("t_stack: ");
       for(int i = 0; i < t_stack_cnt; i++) {
         printf("%d, ", t_stack[i]->t);

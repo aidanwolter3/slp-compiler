@@ -1,9 +1,17 @@
+OBJ_DIR = src/obj/
+OBJ_DIR_DEBUG = src/dbg/
+
 CPP_FILES := $(wildcard src/*.cpp) $(wildcard src/**/*.cpp)
-OBJ_FILES := $(addprefix src/obj/, $(notdir $(CPP_FILES:.cpp=.o)))
+OBJ_FILES := $(addprefix $(OBJ_DIR), $(notdir $(CPP_FILES:.cpp=.o)))
+OBJ_FILES_DEBUG := $(addprefix $(OBJ_DIR_DEBUG), $(notdir $(CPP_FILES:.cpp=.o)))
 
 all:
 	(cd src; make)
 	g++ compiler.cpp $(OBJ_FILES) -o compiler
+
+debug:
+	(cd src; make debug)
+	g++ compiler.cpp $(OBJ_FILES_DEBUG) -o compiler -DDEBUG
 
 mac-exe:
 	nasm -f macho output.asm

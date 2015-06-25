@@ -3,8 +3,6 @@
 
 #include "LexicalAnalyzer.h"
 
-//#define LEXDEBUG
-
 //allocate and duplicate a token
 Token* Token::duplicate() {
   return new Token(t, l);
@@ -71,7 +69,7 @@ Token* LexicalAnalyzer::nextToken() {
 
     c = 0;
 
-    #ifdef LEXDEBUG
+    #ifdef DEBUG
     printf("received token: %d %s\n", t->t, t->l);
     #endif
 
@@ -87,7 +85,7 @@ Token* LexicalAnalyzer::nextToken() {
 
     c = 0;
 
-    #ifdef LEXDEBUG
+    #ifdef DEBUG
     printf("received token: %d %s\n", t->t, t->l);
     #endif
 
@@ -145,7 +143,7 @@ Token* LexicalAnalyzer::nextToken() {
 
       t->t = table[stage][cols-1];
 
-      #ifdef LEXDEBUG
+      #ifdef DEBUG
       printf("received token: %d %s\n", t->t, t->l);
       #endif
 
@@ -185,7 +183,7 @@ Token* LexicalAnalyzer::nextToken() {
 
   throwUnknownToken(cur_line, line_index, line_number, t);
 
-  #ifdef LEXDEBUG
+  #ifdef DEBUG
   printf("received token: %d %s\n", t->t, t->l);
   #endif
 
