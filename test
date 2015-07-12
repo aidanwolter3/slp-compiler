@@ -1,4 +1,8 @@
 str = "hi"
 newline = 10
+zero = 48
+five = zero + 5
 huck str
+huck newline
+huck five
 huck newline

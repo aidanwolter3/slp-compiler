@@ -4,79 +4,12 @@
 const char* CodeGenerator_macho64_osx::head =
                            "global start\n"
                            "section .text\n";
-const char* CodeGenerator_macho64_osx::putint =       
-                           "\nputint:\n"
-                           "push eax\n"
-                           "push ebx\n"
-                           "push ecx\n"
-                           "push edx\n"
-                           "mov eax,dword[esp+20]\n"
-                           "mov ecx,0\n"
-                           "push 0\n"
-                           "push 0x0A\n"
-                           "mov ebx,10\n"
-                           ".putint0:\n"
-                           "add ecx,1\n"
-                           "mov dx,0\n"
-                           "div bx\n"
-                           "add edx,0x30\n"
-                           "push edx\n"
-                           "cmp ax,0\n"
-                           "jz .putint1\n"
-                           "jmp .putint0\n"
-                           ".putint1:\n"
-                           "push dword esp\n"
-                           "call putstr\n"
-                           "add esp,4\n"
-                           "lea ecx,[8+4*ecx]\n"
-                           "add esp,ecx\n"
-                           "pop edx\n"
-                           "pop ecx\n"
-                           "pop ebx\n"
-                           "pop eax\n"
-                           "ret\n";
-const char* CodeGenerator_macho64_osx::putstr =
-                           "\nputstr:\n"
-                           "push eax\n"
-                           "mov esi,dword[esp+8]\n"
-                           ".putstr0:\n"
-                           "mov byte al,[esi]\n"
-                           "cmp al,0\n"
-                           "je .putstr1\n"
-                           "push eax\n"
-                           "call putchar\n"
-                           "add esp,4\n"
-                           "add esi,4\n"
-                           "jmp .putstr0\n"
-                           ".putstr1:\n"
-                           "pop eax\n"
-                           "ret\n";
-const char* CodeGenerator_macho64_osx::putchar =
-                           "\nputchar:\n"
-                           "push eax\n"
-                           "push ebx\n"
-                           "push ecx\n"
-                           "push edx\n"
-                           "push dword [esp+20]\n"
-                           "mov ebx,1\n"
-                           "mov edx,esp\n"
-                           "push dword 1\n"
-                           "push dword edx\n"
-                           "push dword 1\n"
-                           "mov eax,4\n"
-                           "sub esp,4\n"
-                           "int 0x80\n"
-                           "add esp,20\n"
-                           "pop edx\n"
-                           "pop ecx\n"
-                           "pop ebx\n"
-                           "pop eax\n"
-                           "ret\n";
 
 CodeGenerator_macho64_osx::CodeGenerator_macho64_osx(SymbolTable *symbolTable, char *output) {
 
-  //grab the symbol table
+  //grab the symbol table and calculate variable locations
   this->symbolTable = symbolTable;
+  this->symbolTable->calculate_locations();
 
   //copy the output location
   strcpy(this->output, output);
@@ -93,14 +26,9 @@ CodeGenerator_macho64_osx::CodeGenerator_macho64_osx(SymbolTable *symbolTable, c
 
   len += sprintf(code+len, "%s", head);
 
-  //add the necessary functions for printing an integer
-  len += sprintf(code+len, "%s", putint);
-  len += sprintf(code+len, "%s", putstr);
-  len += sprintf(code+len, "%s", putchar);
-
   len += sprintf(code+len, "\nstart:\n"
-                           "mov ebp,esp\n"
-                           "sub esp,%d\n", symbolTable->size*4);
+                           "mov rbp,rsp\n"
+                           "sub rsp,%d\n", symbolTable->data_size());
 }
 const char* CodeGenerator_macho64_osx::next_reg() {
   if(regs.eax == 0) {
@@ -145,16 +73,11 @@ void CodeGenerator_macho64_osx::release_reg(const char *reg) {
   }
 }
 void CodeGenerator_macho64_osx::write_exit() {
-  len += sprintf(code+len, "mov rax, 0x2000001\n"
-                           "mov rdi, 0\n"
-                           "syscall\n");
-  //len += sprintf(code+len, "add esp,%d\n"
-  //                         "\n;exit\n"
-  //                         "push dword 0\n"
-  //                         "mov eax,1\n"
-  //                         "sub esp,12\n"
-  //                         "int 0x80\n"
-  //                         "add esp,4\n", symbolTable->size*4);
+  len += sprintf(code+len, "add rsp,%d      ; move stack past local vars\n"
+                           "\n;exit\n"
+                           "mov rax,0x2000001\n"
+                           "mov rdi,0\n"
+                           "syscall\n", symbolTable->data_size());
 }
 void CodeGenerator_macho64_osx::print_code() {
   printf("%s", code);
@@ -173,17 +96,31 @@ void* CodeGenerator_macho64_osx::visit(AssignStatement *stm) {
   CodeReturn *c1 = (CodeReturn*)stm->id->accept(this);
   CodeReturn *c2 = (CodeReturn*)stm->exp->accept(this);
 
-  len += sprintf(code+len, "mov %s,%s\n", c1->tmp, c2->tmp);
-
-  release_reg(c2->tmp);
+  if(c2->type == EXPRESSION_STR_PROD) {
+    char *str = c2->tmp;
+    Symbol *sym = symbolTable->get(stm->id->lexem);
+    for(int i = 0; i < strlen(str); i++) {
+      len += sprintf(code+len, "mov dword [rbp-%d],%d ; str assign\n", (sym->loc)-(i*4), str[i]);
+    }
+  }
+  else {
+    len += sprintf(code+len, "mov dword %s,%s ; assign\n", c1->tmp, c2->tmp);
+    release_reg(c2->tmp);
+  }
 
   return new CodeReturn(0, STATEMENT_ASGN_PROD);
 }
 void* CodeGenerator_macho64_osx::visit(PrintStatement *stm) {
   CodeReturn *c = (CodeReturn*)stm->exp->accept(this);
 
-  len += sprintf(code+len, "push dword %s\n", c->tmp);
-  len += sprintf(code+len, "call putint\n");
+  //get the symbol so that we know how long to print
+  Symbol *sym = symbolTable->get(((IdExpression*)(stm->exp))->lexem);
+
+  len += sprintf(code+len, "mov rax,0x2000004 ; huck\n"
+                           "mov rdi,1\n"
+                           "lea rsi,%s\n"
+                           "mov rdx,%d\n"
+                           "syscall\n", c->tmp, sym->size);
 
   release_reg(c->tmp);
 
@@ -192,7 +129,7 @@ void* CodeGenerator_macho64_osx::visit(PrintStatement *stm) {
 void* CodeGenerator_macho64_osx::visit(IdExpression *exp) {
   CodeReturn *c = new CodeReturn(0, EXPRESSION_ID_PROD);
   Symbol *sym = symbolTable->get(exp->lexem);
-  sprintf(c->tmp, "[ebp-%d]", sym->loc);
+  sprintf(c->tmp, "[rbp-%d]", sym->loc);
   return c;
 }
 void* CodeGenerator_macho64_osx::visit(NumExpression *exp) {
@@ -204,11 +141,8 @@ void* CodeGenerator_macho64_osx::visit(NumExpression *exp) {
   return c;
 }
 void* CodeGenerator_macho64_osx::visit(StrExpression *exp) {
-  const char *reg = next_reg();
-  len += sprintf(code+len, "mov %s,%d\n", reg, 911);
-
   CodeReturn *c = new CodeReturn(0, EXPRESSION_STR_PROD);
-  strcpy(c->tmp, reg);
+  strcpy(c->tmp, exp->val);
   return c;
 }
 void* CodeGenerator_macho64_osx::visit(OperationExpression *exp) {
@@ -219,34 +153,34 @@ void* CodeGenerator_macho64_osx::visit(OperationExpression *exp) {
   const char *reg = next_reg();
 
   if(c2->type == OPERATION_PLUS_PROD) {
-    len += sprintf(code+len, "mov %s,%s\n"
+    len += sprintf(code+len, "mov %s,%s     ; +\n"
                              "add %s,%s\n", reg, c1->tmp, reg, c3->tmp);
   }
   else if(c2->type == OPERATION_MINUS_PROD) {
-    len += sprintf(code+len, "mov %s,%s\n"
+    len += sprintf(code+len, "mov %s,%s     ; -\n"
                              "sub %s,%s\n", reg, c1->tmp, reg, c3->tmp);
   }
   else if(c2->type == OPERATION_DIV_PROD) {
-    len += sprintf(code+len, "push eax\n"
-                             "push edx\n"
-                             "mov eax,%s\n"
-                             "div dword %s\n"
+    len += sprintf(code+len, "push rax      ; /\n"
+                             "push rdx\n"
+                             "mov rax,%s\n"
+                             "div qword %s\n"
                              "push %s\n"
-                             "add esp,4\n"
-                             "pop edx\n"
-                             "pop eax\n"
-                             "mov %s,[esp-12]\n", c1->tmp, c3->tmp, c1->tmp, reg);
+                             "add rsp,4\n"
+                             "pop rdx\n"
+                             "pop rax\n"
+                             "mov %s,[rsp-12]\n", c1->tmp, c3->tmp, c1->tmp, reg);
   }
   else if (c2->type == OPERATION_MULT_PROD) {
-    len += sprintf(code+len, "push eax\n"
-                             "push edx\n"
-                             "mov eax,%s\n"
-                             "mul dword %s\n"
+    len += sprintf(code+len, "push rax      ; *\n"
+                             "push rdx\n"
+                             "mov rax,%s\n"
+                             "mul qword %s\n"
                              "push %s\n"
-                             "add esp,4\n"
-                             "pop edx\n"
-                             "pop eax\n"
-                             "mov %s,[esp-12]\n", c1->tmp, c3->tmp, c1->tmp, reg);
+                             "add rsp,4\n"
+                             "pop rdx\n"
+                             "pop rax\n"
+                             "mov %s,[rsp-12]\n", c1->tmp, c3->tmp, c1->tmp, reg);
   }
 
   release_reg(c1->tmp);

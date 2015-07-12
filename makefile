@@ -14,7 +14,7 @@ debug:
 	g++ compiler.cpp $(OBJ_FILES_DEBUG) -o compiler -DDEBUG
 
 mac-exe:
-	nasm -f macho output.asm
+	nasm -f macho64 output.asm
 	ld -macosx_version_min 10.7.0 -o output output.o
 ubu-exe:
 	nasm -f elf output.asm -o output.o
