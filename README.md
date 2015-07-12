@@ -1,7 +1,7 @@
 # ult-compiler
 This Ultimate homemade compiler was originally made for a Programming Translation course at LeTourneau University, but it has since been modified and tuned.
 
-The compiler translates a the Ultimate language into x86 assembly for either Mac or Ubuntu or x64 assembly for Mac.
+The compiler translates the Ultimate language into x86 assembly for either Mac or Ubuntu or x64 assembly for Mac.
 
 *Fun fact: the language is based off of the sport Ultimate Frisbee.*
 
