@@ -1,2 +1,4 @@
-var = 9
-huck "hi"
+str = "hi"
+newline = 10
+huck str
+huck newline

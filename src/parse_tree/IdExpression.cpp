@@ -1,6 +1,7 @@
 #include "IdExpression.h"
 
 IdExpression::IdExpression(char *l) {
+  data_size = 4;
   lexem = l;
 }
 

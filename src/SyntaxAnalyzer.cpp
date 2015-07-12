@@ -31,7 +31,7 @@ int SyntaxAnalyzer::parse() {
   char *stopstr;
 
   if(t->t == 2) {
-    symbolTable->add(t->t, t->l, 0); //type = 0 for now
+    symbolTable->add(t->t, t->l, 0, 4); //type = 0 for now
   }
 
   while(true) {
@@ -52,7 +52,7 @@ int SyntaxAnalyzer::parse() {
       memcpy(last_t, t, sizeof(&t));
       t = lexicalAnalyzer->nextToken();
       if(t->t == 2) {
-        symbolTable->add(t->t, t->l, 0); //type = 0 for now
+        symbolTable->add(t->t, t->l, 0, 4); //type = 0 for now
       }
     }
 
@@ -63,8 +63,8 @@ int SyntaxAnalyzer::parse() {
       last_line_index = lexicalAnalyzer->getLineIndex();
       memcpy(last_t, t, sizeof(&t));
       t = lexicalAnalyzer->nextToken();
-      if(t->t == 1) {
-        symbolTable->add(t->t, t->l, 0); //type = 0 for now
+      if(t->t == 2) {
+        symbolTable->add(t->t, t->l, 0, 4); //type = 0 for now
       }
     }
 
@@ -113,7 +113,7 @@ int SyntaxAnalyzer::parse() {
         memcpy(last_t, t, sizeof(&t));
         t = lexicalAnalyzer->nextToken();
         if(t->t == 2) {
-          symbolTable->add(t->t, t->l, 0); //type = 0 for now
+          symbolTable->add(t->t, t->l, 0, 4); //type = 0 for now
         }
         continue;
       }
@@ -166,16 +166,22 @@ int SyntaxAnalyzer::parse() {
             Expression *exp = (Expression*)parseTree->pop();
             AssignStatement *stm = new AssignStatement(id, exp);
             parseTree->push(stm);
+
+            //update the size of the id in the symbol table
+            Symbol *sym = symbolTable->get(lexem);
+            sym->size = exp->data_size;
             break;
           }
 
-          //S -> huck E
+          //S -> huck id
           case STATEMENT_HUCK_PROD: {
             pop_size = 2;
             rep_token->t = S_TOKEN;
             rep_token->l[0] = 'S';
 
-            Expression *exp = (Expression*)parseTree->pop();
+            char *lexem = (char*)malloc(sizeof(&t_stack[t_stack_cnt-1]));
+            strcpy(lexem, t_stack[t_stack_cnt-1]->l);
+            IdExpression *exp = new IdExpression(lexem);
             PrintStatement *print = new PrintStatement(exp);
             parseTree->push(print);
             break;
@@ -335,7 +341,7 @@ int SyntaxAnalyzer::parse() {
 
         //if an id
         if(t->t == 2) {
-          symbolTable->add(t->t, t->l, 0); //type = 0 for now
+          symbolTable->add(t->t, t->l, 0, 4); //type = 0 for now
         }
       }
 

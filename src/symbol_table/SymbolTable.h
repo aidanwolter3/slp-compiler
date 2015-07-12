@@ -10,6 +10,7 @@ class Symbol {
     int t;
     int type;
     int loc;
+    int size;
 };
 
 class SymbolTable {
@@ -18,8 +19,10 @@ class SymbolTable {
     int size;
 
     SymbolTable();
+    int data_size();
+    void calculate_locations();
     void dump();
-    int add(int token, char *lexem, int type);
+    int add(int token, char *lexem, int type, int size);
     Symbol* get(char *lexem);
 };
 

@@ -58,6 +58,7 @@ class BinaryOperation : public ParseTreeNode {
 };
 class Expression : public ParseTreeNode {
   public:
+    int data_size;
     void* accept(Visitor *v) {return 0;}
 };
 

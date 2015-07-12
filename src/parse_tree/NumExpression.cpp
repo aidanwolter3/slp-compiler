@@ -1,6 +1,7 @@
 #include "NumExpression.h"
 
 NumExpression::NumExpression(int v) {
+  data_size = 4;
   val = v;
 }
 

@@ -11,6 +11,24 @@ SymbolTable::SymbolTable() {
   size = 0;
 }
 
+//calculate the current size of the table
+int SymbolTable::data_size() {
+  int s = 0;
+  for(int i = 0; i < size; i++) {
+    s += symbols[i]->size;
+  }
+  return s;
+}
+
+//calculate the correct locations in the frame for each variable
+void SymbolTable::calculate_locations() {
+  int cur_ptr = 0;
+  for(int i = 0; i < size; i++) {
+    cur_ptr += symbols[i]->size;
+    symbols[i]->loc = cur_ptr;
+  }
+}
+
 //dump the symbol table to stdout
 void SymbolTable::dump() {
   printf("\nSymbol Table:\n");
@@ -20,11 +38,11 @@ void SymbolTable::dump() {
 }
 
 //add a symbol to the symbol table
-int SymbolTable::add(int token, char *lexem, int type) {
+int SymbolTable::add(int token, char *lexem, int type, int size) {
 
   //add the token to the symbol table if needed
   bool sym_found = false;
-  for(int i = 0; i < size; i++) {
+  for(int i = 0; i < this->size; i++) {
     if(strcmp(symbols[i]->name, lexem) == 0) {
       sym_found = true;
       break;
@@ -34,10 +52,10 @@ int SymbolTable::add(int token, char *lexem, int type) {
     Symbol *sym = new Symbol();
     sym->t = token;
     sym->type = 0; //initialize to 0 for now
-    sym->loc = (size+1)*4; // set the offset on the stack
+    sym->loc = 0; // set the offset on the stack to zero initially
     sym->name = (char*)malloc(sizeof(lexem));
     strcpy(sym->name, lexem);
-    symbols[size++] = sym;
+    symbols[this->size++] = sym;
   }
 
   return sym_found ? 0 : -1;
