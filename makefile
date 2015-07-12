@@ -7,11 +7,11 @@ OBJ_FILES_DEBUG := $(addprefix $(OBJ_DIR_DEBUG), $(notdir $(CPP_FILES:.cpp=.o)))
 
 all:
 	(cd src; make)
-	g++ compiler.cpp $(OBJ_FILES) -o compiler
+	g++ ult.cpp $(OBJ_FILES) -o ult
 
 debug:
 	(cd src; make debug)
-	g++ compiler.cpp $(OBJ_FILES_DEBUG) -o compiler -DDEBUG
+	g++ ult.cpp $(OBJ_FILES_DEBUG) -o ult -DDEBUG
 
 mac-exe:
 	nasm -f macho64 output.asm
@@ -29,4 +29,4 @@ clean:
 	(cd src; make clean)
 	rm *.o
 	rm *.asm
-	rm compiler
+	rm ult
